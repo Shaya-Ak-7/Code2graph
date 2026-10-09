@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security policy
+    url: https://github.com/Shaya-Ak-7/knowledge-graph-7/security/policy
+    about: Please report vulnerabilities privately using the security policy.
+  - name: Usage and design documentation
+    url: https://github.com/Shaya-Ak-7/knowledge-graph-7
+    about: Start with the README and architecture notes before opening an issue.
+  - name: Contributing guide
+    url: https://github.com/Shaya-Ak-7/knowledge-graph-7/blob/main/CONTRIBUTING.md
+    about: Read the development and contribution guidelines before opening a pull request.

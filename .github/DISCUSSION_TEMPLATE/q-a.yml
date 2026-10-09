@@ -1,0 +1,32 @@
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking. Before posting, please check the
+        [docs](https://github.com/Shaya-Ak-7/knowledge-graph-7/tree/main/docs) and search existing
+        [discussions](https://github.com/Shaya-Ak-7/knowledge-graph-7/discussions)
+        and [issues](https://github.com/Shaya-Ak-7/knowledge-graph-7/issues) — your
+        question may already be answered. If you have found a bug, please open an issue instead so it can be tracked.
+  - type: textarea
+    id: question
+    attributes:
+      label: What are you trying to do?
+      description: Describe the goal and the question, not only the error.
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Commands you ran, docs you read, and what happened.
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: code2graph version and environment
+      description: Output of `code2graph --version`, plus your OS and Python version.
+      placeholder: "code2graph 0.1.0 (local build), Linux/macOS/Windows, Python 3.x"
+    validations:
+      required: false
