@@ -1,0 +1,542 @@
+[
+{
+"insertInlineImage": {
+"location": {
+"index": 73170
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_11_quality_gates.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 59.5,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 73170,
+"endIndex": 73172
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 71171
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_7_healing_cycle.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 162.4,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 71171,
+"endIndex": 71173
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 71110
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_9_healed.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 203.5,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 71110,
+"endIndex": 71112
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 70594
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_8_broken.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 347.5,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 70594,
+"endIndex": 70596
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 69431
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_3_communities_breakdown.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 191.1,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 69431,
+"endIndex": 69433
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 68847
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_2_confidence_coverage.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 200.7,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 68847,
+"endIndex": 68849
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 68452
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_1_edge_relations.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 258.0,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 68452,
+"endIndex": 68454
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 67373
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_5_help.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 280.3,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 67373,
+"endIndex": 67375
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 66920
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_4_path_explain.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 213.1,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 66920,
+"endIndex": 66922
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 66442
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_3_query.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 299.5,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 66442,
+"endIndex": 66444
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 65984
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_2_godnodes.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 184.3,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 65984,
+"endIndex": 65986
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 65508
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig5_1_extract.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 193.9,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 65508,
+"endIndex": 65510
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 46291
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig4_1_layers.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 232.9,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 46291,
+"endIndex": 46293
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 43899
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig3_4_healing_flow.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 197.8,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 43899,
+"endIndex": 43901
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 42382
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig3_3_data_model.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 189.2,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 42382,
+"endIndex": 42384
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 33242
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig3_2_live_architecture.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 215.0,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 33242,
+"endIndex": 33244
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 31983
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/fig3_1_pipeline.png",
+"objectSize": {
+"width": {
+"magnitude": 430.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 167.7,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 31983,
+"endIndex": 31985
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+},
+{
+"insertInlineImage": {
+"location": {
+"index": 339
+},
+"uri": "https://raw.githubusercontent.com/Shaya-Ak-7/Code2graph/f47793224027047257cdd94a723bea5014eafffe/report_assets/logo.png",
+"objectSize": {
+"width": {
+"magnitude": 90.0,
+"unit": "PT"
+},
+"height": {
+"magnitude": 105.0,
+"unit": "PT"
+}
+}
+}
+},
+{
+"updateParagraphStyle": {
+"range": {
+"startIndex": 339,
+"endIndex": 341
+},
+"paragraphStyle": {
+"alignment": "CENTER"
+},
+"fields": "alignment"
+}
+}
+]

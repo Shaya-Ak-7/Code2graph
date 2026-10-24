@@ -1,0 +1,133 @@
+Table 3.5 Edge confidence labels
+[TABLE 3.5]
+3.4.3 EDGE DIRECTION
+The file graph.json is written with the flag directed set to false, but every link in it is directed, and the order of the endpoints (source then target) carries the direction. Older files may carry the direction in _src and _tgt markers, which take precedence when present. A plain node-link loader that builds an undirected graph can re-order the endpoints of each edge by node-list position and thus lose the direction. For this reason the project provides a dedicated loader, load_node_link_graph, and a function, restore_arc_direction, that stamp the markers on every edge. Consumers read the direction from these markers and never from the order of the two nodes returned by the library.
+3.4.4 BROKEN-EDGE METADATA
+When the target or source of an edge disappears, the edge is not deleted. It is recorded as BROKEN together with the missing node snapshot, the affected files, the reason, the original edge attributes and a timestamp. The record is exposed through the broken_references tool and summarised per file by the heal_status tool. Figure 3.4 shows the healing flow.
+[figure]
+Figure 3.4 Real-time healing flow
+3.5 DESIGN DECISIONS AND RATIONALE
+Table 3.6 records the design decisions that shape the implementation and the reason for each of them. The decisions were made in favour of honesty over completeness: where the system cannot know something, it says so in the data rather than guessing.
+Table 3.6 Key design decisions
+[TABLE 3.6]
+3.6 FUNCTIONAL AND NON-FUNCTIONAL REQUIREMENTS
+3.6.1 FUNCTIONAL REQUIREMENTS
+The system shall scan a directory and report the files it finds by category.
+The system shall extract nodes and edges from supported source files and validate them against the schema.
+The system shall build a graph, cluster it, analyse it and write reports and exports.
+The system shall serve graph queries through MCP tools over standard input and output or HTTP.
+The system shall detect file changes while the server is running and update the graph without a manual command.
+The system shall list broken references and report the healing status of a file.
+The system shall detect, and if possible heal, a symbol rename in the same file and location.
+3.6.2 NON-FUNCTIONAL REQUIREMENTS
+The non-functional requirements are listed in Table 3.7.
+Table 3.7 Non-functional requirements
+[TABLE 3.7]
+3.7 USE CASES
+Table 3.8 lists the principal use cases with the actor and the response of the system.
+Table 3.8 Principal use cases
+[TABLE 3.8]
+CHAPTER 4
+IMPLEMENTATION
+4.1 DEVELOPMENT ENVIRONMENT AND PROJECT LAYOUT
+Code2Graph is implemented in Python and distributed as an installable package described by pyproject.toml. Dependencies are locked with uv.lock, so that the same versions are installed on every machine. The repository root contains the package directory, the tests, the documentation, helper scripts and the configuration that supports development. Table 4.1 summarises the layout as it exists in the repository analysed for this report.
+Table 4.1 Repository layout
+[TABLE 4.1]
+Figure 4.1 presents the same structure as five layers, which is the mental model used throughout the implementation: a request enters at the interface layer, is answered by the intelligence and graph layers, and is ultimately produced by the extraction and foundation layers. The numbers in the figure are those measured on this repository: 55 top-level modules, 36 extractor modules, 112 recognised file extensions and a package of 52,935 lines of Python.
+[figure]
+Figure 4.1 Layer view of the implementation
+4.2 INSTALLATION AND EXECUTION
+Python 3.10 or newer is required. The package is installed in editable mode from the repository root with the mcp extra, which adds the dependencies of the MCP server. The initial graph is created once with the extract command, and the MCP server is then started on the generated graph. The watcher starts together with the server.
+# From the repository root
+python -m pip install -e '.[mcp]'
+# Create the initial local code graph once
+code2graph extract . --code-only
+# Start the MCP server; the project watcher starts with it
+code2graph-mcp code2graph-out/graph.json
+# One-off CLI help listing
+code2graph --help
+The graph and the incremental extraction cache are stored under code2graph-out by default. Two environment variables control the runtime. CODE2GRAPH_OUT selects another output directory, and CODE2GRAPH_WATCH_DEBOUNCE adjusts the save-event debounce interval, which defaults to 0.75 seconds. The option --code-only restricts extraction to locally parseable code, so no external semantic extraction is needed and no API key is required.
+# Optional: use another output directory and a 1.5 s debounce (Linux / macOS)
+export CODE2GRAPH_OUT=build/graph-out
+export CODE2GRAPH_WATCH_DEBOUNCE=1.5
+code2graph-mcp build/graph-out/graph.json
+4.3 IMPLEMENTATION OF THE PIPELINE STAGES
+4.3.1 DETECTION
+The detect function receives the root directory and returns a scan summary dictionary. The summary contains the files grouped by category, the total number of files, the total word count, a warning field and the scan root. The set of suffixes treated as code is held in the constant CODE_EXTENSIONS in detect.py, which currently lists 112 extensions, and the watcher keeps a corresponding list of watched suffixes in _WATCHED_EXTENSIONS in watch.py. A new language must be added to both lists, which is one of the steps in Section 4.4.
+4.3.2 EXTRACTION
+The extract function takes a list of paths. The root argument is keyword-only and optional, but the documentation insists that it should always be supplied, because node identifiers and source_file values are derived relative to root. If root is omitted, the function infers one from the common parent of the given paths, which for a single file is the directory of that file, and identifiers can then contain path segments from the machine on which the extraction ran. The signature below is taken from code2graph/extract.py.
+def extract(
+    paths: list[Path],
+    cache_root: Path | None = None,
+    *,
+    root: Path | None = None,
+    parallel: bool = True,
+    max_workers: int | None = None,
+    resolution_context_nodes: list[dict] | None = None,
+    resolution_context_edges: list[dict] | None = None,
+) -> dict:
+Internally, each extractor follows the same pattern: parse the file with tree-sitter, walk the syntax tree, collect nodes and edges, and run a call-graph second pass that adds INFERRED call edges. New languages are placed in their own module under code2graph/extractors, and extract.py re-exports them while the existing extractors are ported out of it. The resolver prefers to create no edge rather than a wrong edge when a target cannot be resolved with confidence, which keeps the cross-file INFERRED edges reliable. The extraction result of a single file has the form shown below.
+{
+  "nodes": [
+    {"id": "unique_string", "label": "human name",
+     "source_file": "path", "source_location": "L42"}
+  ],
+  "edges": [
+    {"source": "id_a", "target": "id_b",
+     "relation": "calls|imports|uses|...",
+     "confidence": "EXTRACTED|INFERRED|AMBIGUOUS"}
+  ]
+}
+The resolution_context_nodes and resolution_context_edges parameters are the mechanism that makes incremental extraction correct. When the watcher re-parses a changed file, it passes the AST of every unchanged file as read-only context, so a changed caller can still bind foo(), obj.method() or submit(handler) to an unchanged callee. These context structures are never parsed, mutated or returned; only edges sourced by the re-extracted files are emitted.
+4.3.3 GRAPH CONSTRUCTION
+The build function accepts one extraction dictionary or a list of them and returns a NetworkX graph. The function build_from_json performs the same operation for a loaded JSON document. Because the extraction schema is validated first, the builder can assume that every edge has a source, a target, a relation and a confidence label. The builder also carries three safety features: deduplication of nodes and edges that were emitted twice, minting of external stub nodes for imports of packages outside the scan, and a shrink guard that refuses to overwrite a graph with one that has lost a large share of its nodes unless the caller explicitly forces the write. When graph.json is saved and reloaded, the direction of each edge must be preserved, as explained in Section 3.4.3.
+4.3.4 CLUSTERING AND ANALYSIS
+The cluster function returns a dictionary from a community identifier to a list of node identifiers and leaves the input graph unchanged. The analyse functions use these communities together with the graph. The function suggest_questions interleaves its candidate questions across question types before the result limit, which is seven by default, is applied; the candidate order within each type is preserved, and when the limit is smaller than the number of types, the generation order decides priority. This avoids a situation where many ambiguous relationships push out the other, more informative, kinds of question.
+4.3.5 REPORTING AND EXPORT
+The report generator assembles GRAPH_REPORT.md from the graph, the analysis results and the community labels. The export functions each produce one format. The wiki generator writes one article per community and an index file, and the call-flow generator reads files in the output directory and writes an HTML page with Mermaid diagrams. These outputs are intended both for people, who read the report and the wiki, and for tools, which read the JSON and Cypher exports.
+4.4 ADDING A NEW LANGUAGE EXTRACTOR
+The architecture document prescribes the following procedure for supporting a new language. Following it makes the change visible to every part of the pipeline, including the watcher.
+Add a function extract_lang(path) that follows the existing pattern: parse with tree-sitter, walk the nodes, collect nodes and edges, and run the call-graph second pass for INFERRED call edges. Place it in its own module under code2graph/extractors.
+Register the file suffix in the dispatch table of extract() and in collect_files(), both in extract.py.
+Add the suffix to CODE_EXTENSIONS in detect.py and to _WATCHED_EXTENSIONS in watch.py.
+Add the tree-sitter package for the language to the dependencies in pyproject.toml, preferably as an optional extra so that the base installation stays small.
+Add a fixture file to tests/fixtures and behavioural tests to the language test module.
+The repository's extractor migration guide adds one important engineering rule for work in progress: moved code must be byte-identical, one language per change, and the facade re-export in extract.py must keep every moved name. The guide exists because nineteen extractors have already been moved out of extract.py into separate modules without changing behaviour, which is what allows each move to be reviewed as a pure code movement.
+4.5 IMPLEMENTATION OF THE MCP SERVER
+The serve module supports two transports: a standard-input/output server, which is used when a coding assistant launches the server as a child process, and an HTTP server, which accepts a host and a port. The server loads graph.json once, caches the graph in memory, and answers tool calls from the cache. A reload is triggered only when the persisted graph changes. The path of the graph file is validated so that it must resolve inside the output directory. The HTTP transport binds to 127.0.0.1 by default, optionally requires an API key, and prints a warning if it is bound to 0.0.0.0 without a key. Two example tool calls from the documentation are shown below.
+{"tool": "broken_references", "arguments": {}}
+{"tool": "heal_status", "arguments": {"file_path": "src/auth/session.py"}}
+The first call lists all broken edges with their source, the missing endpoint and the reason. The second call reports the number of broken and healed references and the current healing state for one file. The remaining tools, query_graph, shortest_path, get_node, get_neighbors, get_community, god_nodes and graph_stats, let an agent search the graph, find paths and inspect a node, its neighbours and its community. The server also publishes six resources, which an MCP client can read directly: the report, the graph statistics, the god nodes, the surprising connections, the confidence audit and the suggested questions.
+4.6 ALGORITHMS
+The following algorithms describe the behaviour of the system at design level. They are written as pseudocode, derived from the documented behaviour of the pipeline and the watcher, and they are not copies of the source code.
+4.6.1 BATCH GRAPH CONSTRUCTION
+Algorithm 4.1  BuildGraph(root)
+  summary     <- detect(root)
+  files       <- collect_files(root)
+  cached,todo <- check_cache(files, root)
+  extractions <- cached
+  for each file f in todo:
+      result <- extract([f], root = root)
+      assert_valid(result)                # schema check
+      add result to extractions
+  G           <- build(extractions)        # dedupe + stub minting + shrink guard
+  communities <- cluster(G)
+  analysis    <- god_nodes(G), surprising_connections(G),
+                 find_import_cycles(G), suggest_questions(G, ...)
+  report      <- generate(G, communities, ...)
+  to_json(G) and the other requested exports
+  return G
+4.6.2 INCREMENTAL UPDATE WITH HEALING
+Algorithm 4.2  OnFilesChanged(events)
+  wait until no new event arrives for `debounce` seconds
+  changed  <- files from created, saved, deleted, renamed events
+  old      <- nodes of G that belong to the changed files
+  context  <- AST payload of every unchanged file      # read-only
+  for each file f in changed that still exists:
+      new_part <- extract([f], root, resolution_context = context)
+      replace the nodes and edges of f in G by new_part
+  new      <- nodes of G that belong to the changed files
+  gone     <- old - new
+  for each edge e in G whose endpoint is in gone:
+      remove e from the active edge list
+      record e as BROKEN with (missing node, location, reason, files)

@@ -1,0 +1,79 @@
+CODE2GRAPH: A CODE-INTELLIGENCE GRAPH WITH REAL-TIME REFERENCE HEALING FOR AI CODING AGENTS
+A MINI PROJECT REPORT
+Submitted by
+AKSHAYA KUMAR R S (910623108002)
+SENTHIL PANDIAN G S (910623108044)
+SACHIN J (910623108041)
+in partial fulfillment for the award of the degree
+of
+BACHELOR OF TECHNOLOGY
+in
+ARTIFICIAL INTELLIGENCE & DATA SCIENCE
+[logo]
+K.L.N. COLLEGE OF ENGINEERING, POTTAPALAYAM
+(An Autonomous Institution, Affiliated to Anna University, Chennai)
+NOVEMBER 2026
+K.L.N. COLLEGE OF ENGINEERING, POTTAPALAYAM
+(An Autonomous Institution, Affiliated to Anna University, Chennai)
+BONAFIDE CERTIFICATE
+Certified that this mini project report “CODE2GRAPH: A CODE-INTELLIGENCE GRAPH WITH REAL-TIME REFERENCE HEALING FOR AI CODING AGENTS” is the bonafide work of “AKSHAYA KUMAR R S (910623108002)”, “SENTHIL PANDIAN G S (910623108044)” and “SACHIN J (910623108041)” who carried out the mini project work under my supervision.
+
+Submitted for the mini project work viva-voce examination held on ____________________
+Signature of the Guide
+Signature of the Head of the Department
+ACKNOWLEDGEMENT
+Any work would be unfulfilled without a word of thanks. We hereby take pleasure in acknowledging the persons who guided us throughout our mini project work.
+First and foremost, thanks are to the omnipotent for providing us with his abundant blessings all throughout. We extend our heartfelt thanks to Er. K.N.K. KARTHIK, B.E., President of our college, and Dr. A.V. RAMPRASAD, M.E., Ph.D., Principal, for providing us with all the required facilities to carry out this mini project.
+We esteem ourselves to articulate our sincere thanks to DR. S. SURESH RAJA, M.C.A., M.Phil., M.E., Ph.D., Head of the Department of Artificial Intelligence and Data Science, for leading us towards the zenith of success and for the constant encouragement given to us during the mini project.
+We express our grateful thanks to our Mini Project Guide and Coordinator MR. B. ANANDA SABARI RAJAN, B.E., M.E., (Ph.D.), Assistant Professor, Department of Artificial Intelligence and Data Science, for the invaluable guidance, timely advice and constant motivation. His assistance has been very helpful throughout our mini project work. We would also like to thank all the teaching and non-teaching staff of our department, who have been a source of encouragement and ideas, and who lent us their support whenever it was needed.
+Finally, we thank our families and friends for their patience and support during the course of this mini project.
+ABSTRACT
+Understanding a large code base is a time-consuming task for developers and for AI coding agents, which can read only a limited amount of text at a time. This mini project presents Code2Graph, a code-intelligence toolkit that converts a source tree into a navigable graph of symbols, files, imports, calls and inheritance relationships. Structural extraction is fully deterministic and is implemented with tree-sitter grammars, so building the code graph needs no large-language-model credits and no API key. The graph is validated, clustered into communities, analysed and exported as a Markdown report, an interactive HTML page, a per-community wiki and several standard graph formats. A Model Context Protocol server exposes query, path, neighbour, community and broken-reference tools to coding agents. A background watcher debounces file events, re-parses only the changed files, records references whose targets disappeared as BROKEN metadata, and restores them when the targets return, so no manual update step is needed.
+The implementation is evaluated in three ways. First, the toolkit is applied to its own repository: 566 code files are converted into 15,217 nodes and 35,451 edges in 23 seconds with zero model calls, and clustering produces 615 communities in 9 seconds. Second, the healing mechanism is exercised on a controlled two-file project, where deleting a file turns five edges into BROKEN records and restoring it heals all five and returns the file status to HEALTHY. Third, the engineering quality of the mini project is measured by its test suite, which reports 6,542 passing tests with 80 per cent statement coverage. The published evaluation of the upstream project, which is quoted separately and clearly labelled, reports a LOCOMO retrieval recall@10 of 0.497 and a key-fact coverage improvement on ERPNext from 70.8 to 82.0 per cent. The mini project primarily supports SDG 9: Industry, Innovation and Infrastructure.
+TABLE OF CONTENTS
+§§TOC§§
+LIST OF TABLES
+§§LOT§§
+LIST OF FIGURES
+§§LOF§§
+LIST OF ABBREVIATIONS
+§§ABBR§§
+CHAPTER 1
+INTRODUCTION
+1.1 OVERVIEW OF THE MINI PROJECT
+Modern software systems are rarely small. A typical production repository contains thousands of files, tens of thousands of functions and classes, and an even larger number of relationships between them: one module imports another, one function calls another, one class inherits from another. Understanding how a change in one place ripples through the rest of the system is one of the most time-consuming activities in software engineering. The same difficulty now affects AI coding assistants, which must decide what to read from a repository before they can answer a question or edit a file.
+This mini project, Code2Graph, addresses that problem by converting a source tree into a navigable knowledge graph. In the graph, symbols, files, imports, calls, inheritance links and other relationships are modelled as nodes and edges. Instead of repeatedly scanning the entire project, a developer or a coding agent can query the graph to follow execution paths, understand dependencies and identify the impact of a change.
+The system is implemented as a Python library together with a Model Context Protocol (MCP) server. The library runs a staged pipeline of detection, extraction, graph construction, clustering, analysis, reporting and export. The MCP server loads the generated graph, answers graph queries from coding agents, and runs a background watcher that keeps the graph current while the developer works. File saves, deletions and renames are detected automatically; only the affected files are re-parsed; references whose targets have disappeared are recorded as broken rather than silently discarded; and those references are restored automatically when their targets return. This behaviour is called real-time healing and it is the central contribution of the mini project.
+A second design decision is that the structural indexing of source code is fully deterministic. Files are parsed with tree-sitter grammars, and the resulting graph depends only on the bytes of the source files and the installed grammar versions. Building the code graph therefore consumes no large-language-model credits, needs no API key, works offline, and produces the same graph on every machine. Files that genuinely need semantic interpretation, such as PDFs and images, are detected and flagged for an optional external extraction workflow instead of being given invented content.
+The mini project is implemented in Python, is installable with pip, ships a command-line interface with twenty-seven command branches, an MCP server with twelve tools and six resources, thirty-six language extractor modules covering 112 file extensions, and a test suite of 6,542 tests. All numbers quoted in this report were measured on the implementation described in Chapter 4.
+1.2 PROBLEM STATEMENT
+Developers and AI coding agents face several related problems when working with large code bases.
+Navigation cost: finding where a symbol is defined, who calls it and what depends on it normally requires text search followed by manual reading of many files, and the effort grows with the size of the repository.
+Context limits of LLM agents: an assistant can only reason about the text placed in its context window. Packing a whole repository into every request is expensive and inaccurate, while grep-style searching returns many irrelevant matches and needs many turns.
+Stale indexes: static code indexes become outdated as soon as files are edited. A stale index silently returns references to symbols that were renamed or deleted, which is worse than returning nothing, because the user trusts the answer.
+Loss of information on change: tools that rebuild an index from scratch after every edit are slow, and tools that simply drop dangling links lose the information that something used to be connected.
+Cost and dependence on external services: many semantic-retrieval and memory systems require a model call for every document they ingest, which increases cost, latency and dependence on a paid API.
+The problem addressed in this mini project is therefore to design and implement a code-intelligence system that (i) represents a code base as a queryable graph, (ii) exposes this graph to coding agents through a standard protocol, (iii) keeps the graph consistent with the files on disk without any manual update command, and (iv) does all of this deterministically, locally and cheaply.
+1.3 OBJECTIVES OF THE MINI PROJECT
+The overall objective is to build an experimental, open and locally runnable code-intelligence layer that lets developers and AI agents understand large repositories through graph queries rather than repeated file scanning. The specific objectives are listed below.
+To detect and classify the files of a project and to extract symbols and relationships from them with tree-sitter based extractors that cover a broad set of programming languages.
+To store the extracted knowledge in a NetworkX graph with a validated schema, and to label every relationship with a confidence level: EXTRACTED, INFERRED or AMBIGUOUS.
+To group the graph into communities and to compute analyses such as highly connected nodes, surprising connections, import cycles and differences between two graphs.
+To generate human-readable and machine-readable outputs: GRAPH_REPORT.md, an interactive HTML graph, a per-community Markdown wiki, a Mermaid call-flow page, and exports to JSON, SVG, GraphML, Obsidian, Canvas and Cypher.
+To expose the graph through an MCP server whose tools support natural-language queries, shortest-path search, node and neighbour inspection, community lookup and broken-reference reporting.
+To implement a background watcher that debounces file events, re-parses only changed files, records broken edges and restores them when their targets reappear, including healing across a unique symbol rename.
+To enforce input safety for URLs, fetched content, graph file paths and node labels.
+To verify the implementation with an automated test suite and to measure the behaviour of the system on a real repository and on a controlled experiment.
+1.4 SCOPE OF THE MINI PROJECT
+The scope covers the complete life cycle of a code graph: its creation from a source tree, its use by humans and agents, and its maintenance while the source tree changes. The mini project concentrates on structural code intelligence. Semantic extraction from non-code artefacts, such as PDFs and images, is deliberately outside the deterministic core and is flagged rather than guessed. Benchmarking against other retrieval systems is outside the implemented scope of the mini project; where the upstream project publishes such numbers, they are quoted as external evidence and labelled as such in Chapter 5.
+1.4.1 EXISTING SYSTEM
+Existing approaches to understanding a code base fall into four groups. The first group consists of plain text tools such as grep and find, which are fast and universal but know nothing about program structure. The second group consists of IDE features and language servers that provide go-to-definition and find-references for one language at a time, usually inside a single editor session. The third group consists of tag indexes and code-search platforms that index a repository and return matches, but rarely expose a graph that an AI agent can traverse, and often have to be fully re-indexed after large changes. The fourth group consists of LLM-based retrieval and memory systems that embed or summarise documents, usually at the price of a model call per document.
+These systems have clear limitations for agent-driven development. Text search does not understand relationships; editor-bound language servers are not designed to be queried by external agents; static indexes go stale; and LLM-based ingestion is costly and non-deterministic. When a file is deleted or a symbol is renamed, most tools either return outdated references or forget that the references ever existed.
+1.4.2 PROPOSED SYSTEM
+The proposed system builds a graph of the code base once and then maintains it incrementally. The pipeline runs in the order detect, extract, build, cluster, analyse, report and export. Each stage is a separate module and the stages communicate through plain Python dictionaries and NetworkX graphs, which keeps the interfaces small and every stage independently testable.
+The MCP server loads the generated graph into memory and offers query tools to coding agents. In the background, a watcher monitors the project directory. When a file changes, only that file is re-parsed and the new node set is compared with the old one. Edges whose endpoints disappeared are kept as BROKEN metadata with the missing node, its location and the reason. If the node comes back, the edge is restored; if a symbol is renamed in the same file and at the same location, a unique match can heal the reference. The graph is then persisted atomically and the in-memory copy in the MCP server is refreshed. As a result there is no manual update step for normal code edits, deletions or renames.
+The system runs locally, needs Python 3.10 or newer, and builds its code graph without an API key. Table 1.1 compares the proposed system with the three existing families.
+Table 1.1 Comparison of existing approaches and Code2Graph
+[TABLE 1.1]
+1.5 RELEVANCE TO THE SOCIETY
+Software underpins healthcare, finance, education, transport and public administration. The people who maintain this software spend a large share of their time reading and understanding existing code rather than writing new code. Tools that shorten this understanding phase improve productivity, reduce defects caused by misunderstood dependencies, and lower the barrier for newcomers who join a project.

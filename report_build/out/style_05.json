@@ -1,0 +1,4 @@
+[
+{"updateParagraphStyle":{"range":{"startIndex":84500,"endIndex":84511},"paragraphStyle":{"namedStyleType":"HEADING_1","pageBreakBefore":true},"fields":"namedStyleType,pageBreakBefore"}},
+{"updateParagraphStyle":{"range":{"startIndex":84511,"endIndex":88224},"paragraphStyle":{"alignment":"START","indentStart":{"magnitude":18,"unit":"PT"},"indentFirstLine":{"magnitude":-18,"unit":"PT"},"spaceBelow":{"magnitude":4,"unit":"PT"}},"fields":"alignment,indentStart,indentFirstLine,spaceBelow"}}
+]

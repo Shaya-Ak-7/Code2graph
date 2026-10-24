@@ -1,0 +1,22 @@
+AI ............................... Artificial Intelligence
+API ............................. Application Programming Interface
+AST ............................ Abstract Syntax Tree
+BFS ............................ Breadth-First Search
+CI ............................... Continuous Integration
+CLI ............................. Command-Line Interface
+HTML ........................ HyperText Markup Language
+HTTP ......................... HyperText Transfer Protocol
+IDE ............................. Integrated Development Environment
+JSON .......................... JavaScript Object Notation
+LLM ........................... Large Language Model
+LOC ........................... Lines of Code
+MCP ........................... Model Context Protocol
+NFR ........................... Non-Functional Requirement
+PR .............................. Pull Request
+RAG ........................... Retrieval-Augmented Generation
+SDG ........................... Sustainable Development Goal
+SVG ........................... Scalable Vector Graphics
+TNR ........................... Times New Roman
+UI ............................... User Interface
+URL ........................... Uniform Resource Locator
+YAML ....................... YAML Ain't Markup Language

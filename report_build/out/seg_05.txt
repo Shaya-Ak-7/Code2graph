@@ -1,0 +1,151 @@
+  for each BROKEN record b:
+      if every missing node of b exists again in G:
+          restore the original edge and mark b HEALED
+      else if exactly one node in the same file and at the same
+              location replaced it (rename):
+          re-point the edge, restore it and mark b HEALED
+  persist G to graph.json atomically, then notify the MCP server
+Two properties of this algorithm deserve emphasis. First, only changed files are parsed again and unchanged nodes stay in the cached graph, so the cost of an update depends on the size of the change and not on the size of the repository. Second, healing is conservative: an edge is re-pointed only when a unique same-file, same-location match exists, because a missing edge is less harmful than a wrong one. Algorithm 4.2 is the core contribution of the mini project and it is the behaviour exercised in the experiment of Section 5.4.
+4.6.3 GRAPH QUERY
+Algorithm 4.3  QueryGraph(question, k, budget)
+  terms  <- tokenise(question) minus stop words
+  seeds  <- top-k nodes ranked by term overlap over label, id,
+            source_file and rationale text
+  context<- seeds
+  for each node s in seeds:
+      add the neighbours of s and their relations to context
+  order the result by proximity to the seeds, then by score
+  emit nodes and edges until `budget` tokens are consumed
+The implementation additionally supports a depth-first mode for tracing a single path, an explicit context filter that restricts traversal to one class of edge (for example calls), and a token budget that truncates the answer while stating how many nodes were cut. The truncation message matters in practice: an agent that is told "26 of 268 nodes shown" can raise the budget or narrow the query instead of assuming the answer is complete.
+4.7 SECURITY IMPLEMENTATION
+All external input is routed through the security module before use. Table 4.2 lists the checks. The tool is local, so the main risks are unsafe network input and writes outside the output directory.
+Table 4.2 Security checks
+[TABLE 4.2]
+The URL check is representative of the implementation style: it rejects any scheme other than http and https, rejects known cloud metadata hostnames, resolves the hostname and rejects private, loopback, link-local and reserved addresses, and the fetch layer re-validates every redirect and enforces a byte cap and a timeout. The excerpt below is taken from code2graph/security.py.
+def validate_url(url: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        raise ValueError(...)              # only http and https
+    hostname = parsed.hostname
+    if hostname:
+        if hostname.lower() in _BLOCKED_HOSTS:
+            raise ValueError(...)          # cloud metadata endpoint
+        infos = socket.getaddrinfo(hostname, None, ...)
+        for info in infos:
+            ip = ipaddress.ip_address(info[4][0])
+            if _ip_is_blocked(ip):
+                raise ValueError(...)      # private / internal IP
+4.8 TESTING STRATEGY
+The repository follows the rule of one test file per module under tests. The suite is designed to avoid network access and uncontrolled file-system effects, and most tests are isolated with temporary directories and environment fixtures. The areas covered include extraction for every supported language, incremental rebuilds, MCP tools, broken-reference persistence, file deletion, symbol-rename healing and graph-cache reload behaviour. A special test, tests/test_architecture_doc.py, imports every symbol that is named in the architecture document, so the module table cannot drift away from the code. Two further guards protect generated artefacts: a generator check that fails if the committed agent-skill bundles differ from their source fragments, and a persistent-cache test that asserts an incremental rebuild produces the same graph as a cold build.
+# Run the complete suite (the repository's documented command)
+python -m pip install -e '.[mcp]' pytest
+pytest tests/ -q
+For this mini project the suite was run in a clean virtual environment on a two-core machine. It reports 6,542 passing tests, 174 skipped tests and no failures in 119 seconds, with 80 per cent statement coverage over 40,724 statements. The measured result is reported in Section 5.5 together with the exact command.
+4.9 PACKAGING, CONTAINERS AND AUTOMATION
+The project is packaged with pyproject.toml and uv.lock records the exact dependency versions. A Dockerfile and a .dockerignore file allow the tool to run in a container as a non-root user, and the Dockerfile documents the HTTP transport invocation. A pre-commit configuration runs the generated-artefact check and a linter before each commit, and the .github directory holds the continuous-integration workflow, which runs the suite on four Python versions and performs a static security scan and a dependency audit. The repository also ships a build-time generator for the agent instruction bundles: 134 generated artefacts are checked against their source fragments, so a hand edit to a generated file fails the check instead of silently diverging.
+4.10 SOURCE CODE LISTINGS
+The three listings below are excerpts of the two functions that carry the central behaviour of the mini project. Comments are preserved where they explain a decision, and the excerpts are shortened only by removing unchanged code, never by changing logic.
+Listing 4.1 Healing reconciliation (excerpt of code2graph/healing.py, line 259).
+def reconcile_healing(
+    old_graph: dict,
+    new_graph: dict,
+    *,
+    changed_paths: list[str | Path] | None = None,
+    project_root: str | Path | None = None,
+) -> dict:
+    """Carry broken references forward, detect deleted nodes,
+    and auto-heal matches.
+
+    new_graph is mutated in place. Its regular edge list contains
+    only valid endpoints; any unresolved edge is retained in graph
+    metadata with a reason. When all missing nodes reappear (or a
+    unique same-file rename match is found), the original edge is
+    restored to the active edge list and its record transitions
+    to HEALED.
+    """
+    records = _merge_records(old_meta.get(_BROKEN_KEY, []), ...)
+    by_id = {record["id"]: record for record in records}
+    removed_ids = set(old_nodes) - set(new_nodes)
+    for edge in old_edges:
+        src = edge.get("source", edge.get("from"))
+        tgt = edge.get("target", edge.get("to"))
+        missing = [n for n in (src, tgt) if n in removed_ids]
+        if not missing:
+            continue
+        snapshots = {n: old_nodes.get(n) for n in missing}
+        record = make_broken_reference(...)
+Listing 4.2 Incremental rebuild entry point (excerpt of code2graph/watch.py, line 1561).
+def _rebuild_code(
+    watch_path: Path,
+    *,
+    changed_paths: list[Path] | None = None,
+    follow_symlinks: bool = False,
+    force: bool = False,
+    no_cluster: bool = False,
+    acquire_lock: bool = True,
+    block_on_lock: bool = False,
+) -> bool:
+    """Re-run AST extraction + build + optional cluster + report
+    for code files. No LLM needed.
+
+    When changed_paths is provided, only those files are
+    re-extracted; nodes for unchanged files are preserved from the
+    existing graph. Deleted paths are dropped from the preserved
+    set. When changed_paths is None the full code corpus is
+    re-extracted.
+    """
+Listing 4.3 Node snapshot used inside a broken-reference record (excerpt of code2graph/healing.py, line 77).
+def _node_snapshot(node_id: Any, node: dict | None) -> dict:
+    """Minimal, stable copy of a node kept inside a BROKEN record."""
+    node = node or {}
+    return {
+        "id": node_id,
+        "label": node.get("label"),
+        "source_file": node.get("source_file"),
+        "source_location": node.get("source_location"),
+        "file_type": node.get("file_type"),
+        ...
+    }
+CHAPTER 5
+RESULTS AND DISCUSSION
+5.1 MEASUREMENT ENVIRONMENT
+Every number in this chapter was produced by running the implementation described in Chapter 4 in the environment of Table 5.1. The command used is quoted with each result so that the measurement can be repeated. Published results of the upstream project are reported separately in Section 5.6 and are never mixed with the measurements of this mini project.
+Table 5.1 Measurement environment
+[TABLE 5.1]
+5.2 EXECUTION OUTPUTS
+The screenshots in this section are the captured output of the commands, not mock-ups. Figure 5.1 shows the first stage of use on a five-file demonstration project: the tool scans the directory, classifies five code files, extracts them with the AST pipeline, and writes a graph of 23 nodes, 36 edges and four communities, followed by the five most connected nodes of that graph.
+[figure]
+Figure 5.1 Extraction on the demonstration project
+Figure 5.2 shows the same command on the repository of the mini project itself, and lists its architectural hubs. The list is a useful sanity check of the extractor: extract() is first with 851 edges, followed by build_from_json() with 264, the identifier helper _make_id() with 231 and the text reader _read_text() with 227, which is exactly the shape expected of a package whose pipeline is its centre of gravity.
+[figure]
+Figure 5.2 Architectural hubs of this repository
+Figure 5.3 shows a natural-language query answered by graph traversal. The query engine returns the seeds it chose, the expanded neighbourhood and the source location of every node, and it states clearly that 18 of 22 nodes are shown because the token budget was 400. That explicit truncation notice is a deliberate design choice: an agent should never mistake a truncated answer for a complete one.
+[figure]
+Figure 5.3 Natural-language query over the graph
+Figure 5.4 shows the two inspection commands. The path command returns a three-hop call chain from the request handler to the database helper, which is the kind of question that normally requires reading four files. The explain command prints the neighbourhood of a single symbol, including the comment node that documents it, which shows that rationale text is stored as a first-class node rather than being discarded.
+[figure]
+Figure 5.4 Shortest path and node explanation
+Figure 5.5 shows the command surface of the tool. The interface exposes the pipeline (extract, update, watch, cluster-only, label), the query surface (query, path, explain, affected, god-nodes), the export surface (html, svg, graphml, obsidian, wiki, neo4j, falkordb, callflow-html), graph merging, pull-request triage, memory reflection and nineteen installer targets for different coding agents.
+[figure]
+Figure 5.5 Command surface of the implementation
+5.3 RESULTS AT REPOSITORY SCALE
+The first measurement applies the toolkit to its own source tree. The command code2graph extract . --code-only --no-cluster scanned 566 code files and wrote a graph of 15,217 nodes and 35,451 edges in 23 seconds, using two worker processes and no model calls. A subsequent cluster-only run produced 615 communities in nine seconds. Table 5.2 summarises the result.
+Table 5.2 Graph statistics for this repository
+[TABLE 5.2]
+The distribution of relationship types, shown in Figure 5.6, is informative about what a code graph actually contains. Calls and containment dominate, which is expected; documentation comment nodes attached by rationale_for form the third largest class, which is a deliberate choice of the extractor, because a comment that explains why a function exists is often more useful to a reader than one more call edge. Import edges are an order of magnitude fewer than call edges, which matches the structure of a Python package that is dominated by a few large modules.
+[figure]
+Figure 5.6 Relationship types in the generated code graph
+Figure 5.7 shows the honesty of the graph: 97.2 per cent of the 35,451 edges are EXTRACTED from the source, 3.3 per cent are INFERRED by the call-graph second pass, and no edge was classified AMBIGUOUS in this run. The same figure shows the measured statement coverage of the key modules against the suite total of 80 per cent.
+[figure]
+Figure 5.7 Confidence mix and measured coverage
+Figure 5.8 relates the size of the corpus to the size of the graph. The package itself is 52,935 lines of Python, the tests are 113,210 lines, and the remaining material is documentation and configuration; the graph nevertheless remains compact at 15,217 nodes, because one node is stored per symbol rather than per line. The community histogram in the same figure shows the intended shape: many small communities that correspond to test modules and a small number of large communities that correspond to the pipeline modules.
+[figure]
+Figure 5.8 Community sizes and repository composition
+5.4 THE HEALING EXPERIMENT
+The central claim of the mini project is that a graph can survive edits without manual rebuilding and without losing the information that a reference once existed. To test the claim directly, a controlled experiment was performed on a two-file demonstration project. The project contains a module app/core.py that defines parse_config() and load(), and a module app/service.py that imports parse_config() and calls it. The graph before the experiment contains five nodes and seven edges. Table 5.3 lists the steps and the observed state after each of them.
+Table 5.3 Healing experiment on a two-file project
+[TABLE 5.3]
+When app/core.py was deleted and code2graph update . was run, the rebuild reported three nodes and two edges, and the graph file recorded five BROKEN references: two containment edges inside the deleted file, one call edge between its two functions, and two cross-file edges from app/service.py, namely the import edge and the call edge. Each record names the missing node, its file and line, the reason, and the affected files, as shown in Figure 5.9.
+[figure]
+Figure 5.9 Broken references after deleting a file
+When the file was restored and update was run again, all five records transitioned to HEALED and the active broken count returned to zero. The heal_status tool reported the file as HEALTHY with zero broken and five healed references, as shown in Figure 5.10. The graph returned to five nodes and seven edges, and the cross-file references from app/service.py were restored to their original endpoints. Figure 5.11 plots the three states of the experiment.
