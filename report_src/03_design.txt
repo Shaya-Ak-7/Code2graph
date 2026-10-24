@@ -1,0 +1,81 @@
+«PAGEBREAK»
+«H1»CHAPTER 3
+«H1»DESIGN
+«H2»3.1 SYSTEM ARCHITECTURE
+«BODY»The architecture of Code2Graph has two cooperating parts. The first is a batch pipeline that converts a source tree into a graph and a set of reports. The second is a live service, the MCP server with its background watcher, that serves the graph to agents and keeps it synchronised with the files on disk. Both parts share the same graph file, graph.json, stored in an output directory named code2graph-out by default.
+«BODY»Figure 3.1 shows the batch pipeline. The pipeline is a chain of stages: detect, extract, build, cluster, analyse, report and export. Each stage lives in its own module and the stages communicate through plain Python dictionaries and NetworkX graphs. This keeps shared state to a minimum and allows every stage to be tested independently, although some extractors still depend on module-level state that describes the active scan root, which is documented in the repository's architecture notes.
+«FIG»fig3_1_pipeline.png|Figure 3.1 Code2Graph processing pipeline
+«BODY»The detect stage scans a directory and returns a summary that groups files into categories and reports counts such as total files and total words. The extract stage takes a list of file paths and returns a dictionary containing nodes and edges. The build stage merges one or more extraction dictionaries into a NetworkX graph. The cluster stage partitions the graph into communities. The analyse functions compute highly connected nodes, surprising connections, import cycles, suggested questions and differences between two graphs. The report stage turns the graph and its analysis into a Markdown report, and the export stage writes the graph in several formats.
+«BODY»Figure 3.2 shows the live service. A coding agent acting as an MCP client sends a tool call to the MCP server, which answers from an in-memory copy of the graph that is cached per project. In parallel, a watcher observes the project directory. When files change, the watcher debounces the events, re-parses the affected files, compares the previous and the new node sets, updates the persisted graph and marks the in-memory copy for reload. Queries therefore reuse the cached graph, and a reload happens only when the persisted graph changes.
+«FIG»fig3_2_live_architecture.png|Figure 3.2 MCP server and real-time healing architecture
+«BODY»The architecture follows five design principles. Determinism: structural extraction uses tree-sitter and no neural model, so the same input always yields the same graph and no model credits are consumed. Incrementality: only changed files are re-processed and unchanged nodes stay in the cached graph. Transparency: every edge carries a confidence label and every broken edge records why it is broken. Safety: all external input passes through a dedicated security module. Modularity: new languages and new export formats are added as separate functions or modules without changing the rest of the pipeline.
+«BODY»Figure 4.1 in the implementation chapter presents the same system as five layers, which is convenient when reading the source tree: an interface layer, an intelligence layer, a graph layer, an extraction layer and a foundation layer. The dependency rule is that a layer may use the layers below it and never the layers above it; paths, security and ids are the only modules imported by every layer.
+«H2»3.2 HARDWARE AND SOFTWARE SPECIFICATIONS
+«H3»3.2.1 HARDWARE REQUIREMENTS
+«BODY»Because the structural pipeline does not use a neural model, it does not need a graphics processor. The requirements below are those of the machine used for the measurements in Chapter 5, a two-core virtual machine, together with the recommended configuration for larger repositories.
+«CAP»Table 3.1 Hardware requirements
+«TBL»3.1
+«H3»3.2.2 SOFTWARE REQUIREMENTS
+«BODY»The software stack is deliberately small and free of services. Table 3.2 lists the components used to build and run the mini project.
+«CAP»Table 3.2 Software requirements
+«TBL»3.2
+«H2»3.3 MODULE SPECIFICATION
+«BODY»The package is organised so that one module corresponds to one responsibility in the pipeline, plus a small number of supporting modules. Table 3.3 gives the entry points and the input and output of each module, as recorded in the architecture document of the repository. That document is itself checked by a test, which imports every symbol named in the table, so the table cannot drift away from the code.
+«CAP»Table 3.3 Module responsibilities
+«TBL»3.3
+«H3»3.3.1 DETECTION MODULE
+«BODY»The detection module walks the project directory and classifies every file by category: source code, documentation, papers and images. It returns a scan summary with the grouped files, the total number of files, the total word count, an optional warning and the scan root. The summary lets the rest of the pipeline decide which extractors apply and lets the user judge the size of the corpus before processing starts. Code files are handled by local structural extractors, while documents and images that need semantic interpretation are flagged for an external workflow.
+«H3»3.3.2 EXTRACTION MODULE
+«BODY»The extraction module is the front end of the pipeline. It accepts a list of paths and dispatches each file to a language-specific extractor according to its suffix, with an additional dispatch table for scripts that carry a shebang but no extension. A helper, collect_files, expands a directory into such a list. Each extractor parses its file with tree-sitter, walks the syntax tree, collects nodes for symbols and files, and collects edges for relations such as containment, imports, calls and inheritance. A second pass resolves calls across the call graph and emits inferred call edges. Every extractor returns the same schema, so downstream stages do not need to know which language produced a result. Node identifiers and source_file values are derived relative to a root directory, so the root should always be passed explicitly.
+«H3»3.3.3 GRAPH CONSTRUCTION AND VALIDATION
+«BODY»The build module merges extraction dictionaries into a NetworkX graph. Before this happens, the validation module checks every extraction against the schema and returns a list of error strings, or raises an exception when the assert variant is used. Validation guarantees that the graph builder only receives well-formed nodes and edges and provides a clear place to detect extractor bugs. The builder also deduplicates nodes and edges, folds aliases, mints external stub nodes for references to packages that are not part of the scan, and refuses to emit an edge whose endpoints are not present in the active graph.
+«H3»3.3.4 CLUSTERING AND ANALYSIS MODULE
+«BODY»The cluster module partitions the graph into communities and returns a dictionary from a community identifier to its member nodes, without changing the graph. The analysis module contains sibling functions rather than a single entry point. The function god_nodes identifies nodes with very high connectivity. The function surprising_connections finds edges that link otherwise distant communities. The function find_import_cycles detects circular imports. The function graph_diff compares an old and a new graph. The function suggest_questions proposes questions that a reader might ask about the graph; it interleaves candidates across several question types before applying its result limit, so that ambiguous relationships cannot hide bridge, inferred-relationship, isolation and low-cohesion signals.
+«H3»3.3.5 REPORTING AND EXPORT MODULE
+«BODY»The report module generates GRAPH_REPORT.md from the graph, its communities, cohesion scores and community labels. The export module offers one function per format: JSON for persistence and interchange, HTML for interactive viewing, SVG for static pictures, GraphML for graph tools, Obsidian for note-taking vaults, Canvas for visual boards and Cypher for graph databases. The wiki module writes one Markdown article per community plus an index, and the call-flow module writes a Mermaid architecture and call-flow page.
+«H3»3.3.6 CACHE MODULE
+«BODY»Extraction can be expensive for files that need an external semantic pass. The cache module therefore stores previously extracted nodes, edges and hyperedges and, given a list of files, returns the cached results together with the list of files that still need extraction. The same cache stores the Abstract Syntax Tree payload of unchanged files, which the watcher replays as read-only resolution context so that a changed caller can still be resolved against unchanged callees.
+«H3»3.3.7 INGESTION AND SECURITY MODULE
+«BODY»External input is the main attack surface of a local tool. The ingestion module saves a file fetched from a URL into the corpus directory. Before and during this operation the security module validates the URL, allows only the http and https schemes, blocks redirects to file URLs, blocks private, loopback, link-local and cloud-metadata addresses, fetches content with a size cap and a timeout, and checks that a graph file path resolves inside the output directory. Node labels are sanitised by removing control characters and limiting their length. The security policy and threat model are documented in SECURITY.md in the repository.
+«H3»3.3.8 MCP SERVER MODULE
+«BODY»The serve module starts either a standard-input/output MCP server or an HTTP server for a given graph file. Table 3.4 lists the tools it exposes. The server caches each project's graph in memory so that queries do not reload the file; a reload happens only after the watcher or another writer changes graph.json.
+«CAP»Table 3.4 Tools exposed by the MCP server
+«TBL»3.4
+«H3»3.3.9 WATCHER AND HEALING MODULE
+«BODY»The watcher runs in the background when the MCP server starts. It debounces save, create, delete and rename events so that a burst of editor activity triggers one update. It re-parses only the affected files for locally parseable code and Markdown, compares the previous and the refreshed node sets, and records edges whose endpoints disappeared as BROKEN, with the missing node, its location and the reason. Broken references are kept as graph metadata and are never represented as phantom nodes. When a missing node reappears the broken edge is restored, and a unique same-file, same-location match can heal a symbol rename. Finally the persisted graph is updated atomically and the in-memory graph in the MCP server is refreshed. The debounce interval is configurable with the environment variable CODE2GRAPH_WATCH_DEBOUNCE; its default in the MCP server is 0.75 seconds, whereas the standalone watch function in watch.py takes a debounce argument whose default is 3.0 seconds.
+«H3»3.3.10 BENCHMARK AND DIAGNOSTIC MODULES
+«BODY»The benchmark module compares the number of tokens in the whole corpus with the number of tokens in a retrieved subgraph. The diagnostics module reports the risk of same-endpoint edge collapse in a graph file, which is a real hazard because graph.json is stored undirected. The affected module performs a reverse traversal from a symbol to list the nodes that a change may impact, and the reflect module aggregates saved question-and-answer outcomes into a deterministic lessons document.
+«H2»3.4 DATA DESIGN
+«H3»3.4.1 EXTRACTION SCHEMA
+«BODY»Every extractor returns a dictionary with two lists. A node has an id, a label, a source_file and a source_location. An edge has a source, a target, a relation and a confidence. The validation module enforces this schema before the graph is built. Figure 3.3 shows the data model of nodes, edges and broken-reference records.
+«FIG»fig3_3_data_model.png|Figure 3.3 Node, edge and broken-reference data model
+«H3»3.4.2 CONFIDENCE LABELS
+«BODY»Every edge carries one of the three labels listed in Table 3.5. The label is not decoration: anything that cannot be established from the source is excluded from the EXTRACTED class, and the report counts AMBIGUOUS relationships so that a reader knows where human review is required.
+«CAP»Table 3.5 Edge confidence labels
+«TBL»3.5
+«H3»3.4.3 EDGE DIRECTION
+«BODY»The file graph.json is written with the flag directed set to false, but every link in it is directed, and the order of the endpoints (source then target) carries the direction. Older files may carry the direction in _src and _tgt markers, which take precedence when present. A plain node-link loader that builds an undirected graph can re-order the endpoints of each edge by node-list position and thus lose the direction. For this reason the project provides a dedicated loader, load_node_link_graph, and a function, restore_arc_direction, that stamp the markers on every edge. Consumers read the direction from these markers and never from the order of the two nodes returned by the library.
+«H3»3.4.4 BROKEN-EDGE METADATA
+«BODY»When the target or source of an edge disappears, the edge is not deleted. It is recorded as BROKEN together with the missing node snapshot, the affected files, the reason, the original edge attributes and a timestamp. The record is exposed through the broken_references tool and summarised per file by the heal_status tool. Figure 3.4 shows the healing flow.
+«FIG»fig3_4_healing_flow.png|Figure 3.4 Real-time healing flow
+«H2»3.5 DESIGN DECISIONS AND RATIONALE
+«BODY»Table 3.6 records the design decisions that shape the implementation and the reason for each of them. The decisions were made in favour of honesty over completeness: where the system cannot know something, it says so in the data rather than guessing.
+«CAP»Table 3.6 Key design decisions
+«TBL»3.6
+«H2»3.6 FUNCTIONAL AND NON-FUNCTIONAL REQUIREMENTS
+«H3»3.6.1 FUNCTIONAL REQUIREMENTS
+«BULLET»The system shall scan a directory and report the files it finds by category.
+«BULLET»The system shall extract nodes and edges from supported source files and validate them against the schema.
+«BULLET»The system shall build a graph, cluster it, analyse it and write reports and exports.
+«BULLET»The system shall serve graph queries through MCP tools over standard input and output or HTTP.
+«BULLET»The system shall detect file changes while the server is running and update the graph without a manual command.
+«BULLET»The system shall list broken references and report the healing status of a file.
+«BULLET»The system shall detect, and if possible heal, a symbol rename in the same file and location.
+«H3»3.6.2 NON-FUNCTIONAL REQUIREMENTS
+«BODY»The non-functional requirements are listed in Table 3.7.
+«CAP»Table 3.7 Non-functional requirements
+«TBL»3.7
+«H2»3.7 USE CASES
+«BODY»Table 3.8 lists the principal use cases with the actor and the response of the system.
+«CAP»Table 3.8 Principal use cases
+«TBL»3.8

@@ -390,7 +390,8 @@ def main() -> None:
                     title="MCP tool: broken_references")
     render_terminal(raw("healed.txt"), OUT / "fig5_9_healed.png",
                     title="MCP tool: heal_status after restore")
-    render_terminal(raw("help.txt"), OUT / "fig5_5_help.png", title="code2graph --help")
+    render_terminal(raw("help_excerpt.txt"), OUT / "fig5_5_help.png",
+                    title="code2graph --help (excerpt)")
     render_terminal(raw("skillgen.txt") + "\n" + raw("ruff.txt"),
                     OUT / "fig5_11_quality_gates.png", title="quality gates")
 

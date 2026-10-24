@@ -1,0 +1,79 @@
+«PAGEBREAK»
+«H1»CHAPTER 6
+«H1»CONCLUSION AND FUTURE ENHANCEMENT
+«H2»6.1 CONCLUSION
+«BODY»This mini project designed and implemented Code2Graph, a code-intelligence toolkit that converts a source tree into a navigable graph and keeps that graph consistent with the files on disk while a developer works. The pipeline of detection, extraction, graph construction, clustering, analysis, reporting and export is deterministic, uses tree-sitter and no neural model for structural extraction, and builds the code graph with no model credits. The MCP server makes the graph available to coding agents through tools for natural-language queries, shortest-path search, node, neighbour and community inspection, and broken-reference reporting.
+«BODY»The distinctive feature of the system is real-time healing. A background watcher debounces file events, re-parses only the changed files, records edges whose endpoints disappeared as BROKEN with the missing node, its location and the reason, and restores them when their targets return or when a unique same-file, same-location match identifies a rename. This removes the manual update step for normal edits, deletions and renames and prevents the graph from silently drifting away from the code. In the controlled experiment of Section 5.4, deleting a file produced five broken references and restoring the file healed all five, returning the file status to HEALTHY without any manual edit of the graph.
+«BODY»The measurements taken for this report show that the approach is practical. Applied to its own repository, the implementation converted 566 code files into 15,217 nodes and 35,451 edges in twenty-three seconds with no model calls, clustered them into 615 communities in nine seconds, and classified 97.2 per cent of the edges as directly extracted from the source. Its automated suite reports 6,542 passing tests with 80 per cent statement coverage, and the modules that carry the central behaviour are covered at 85 to 91 per cent. The published evaluation of the upstream project, quoted as external evidence, reports competitive retrieval recall and an improvement in key-fact coverage on a one-million-line repository.
+«BODY»In terms of the Sustainable Development Goals, the mini project primarily supports SDG 9 by contributing an innovative, locally runnable tool to the technological capability of software teams, and it supports SDG 4, SDG 8, SDG 12 and SDG 17 as described in Chapter 1. Beyond the specific numbers, the most transferable lesson of the work is a design principle: a tool that supports maintenance should record what it does not know. A broken reference, a flagged document, a truncated answer and a refused write are all first-class outcomes in this system, and that is what makes its answers safe to rely on.
+«H2»6.2 FUTURE ENHANCEMENT
+«BODY»The project is experimental, and its command surface and metadata may still change. The following enhancements are proposed.
+«BULLET»Semantic extraction for documents and images: a configured model could be used for PDFs and images that are currently only flagged, with the output clearly labelled as AMBIGUOUS or INFERRED and kept separate from the deterministic layer.
+«BULLET»More languages: the documented extractor procedure allows further tree-sitter languages to be added, each with a fixture and behavioural tests; the seven files that contributed nothing in this measurement would be the first candidates.
+«BULLET»Larger healing evaluation: the deletion and rename experiment should be repeated on a large repository with an instrumented watcher, reporting the number of broken references per edit, the healing rate and the false-healing rate.
+«BULLET»Stable interfaces: the MCP schemas and the graph metadata could be frozen and versioned for a first stable release, together with a final project name.
+«BULLET»Richer visualisation: interactive views of communities, import cycles and broken references could be added to the HTML export, together with editor integration so that a broken reference is visible where the code is edited.
+«BULLET»Impact analysis in continuous integration: the graph-difference function could be combined with the pull-request tooling to report, for each change, which nodes and communities are affected.
+«BULLET»Team and cloud use: the HTTP transport could be extended with authentication, per-team graphs and a shared store through the existing Cypher export, which already targets Neo4j and FalkorDB.
+«BULLET»Query quality: the lexical seed selection could be extended with a local embedding model behind an optional flag, keeping the default installation free of model dependencies.
+«PAGEBREAK»
+«H1»APPENDICES
+«H2»APPENDIX 1 - COMMAND REFERENCE
+«BODY»Table A.1 lists the commands and environment variables used in this report.
+«CAP»Table A.1 Command and environment reference
+«TBL»A.1
+«H2»APPENDIX 2 - EXTRACTION SCHEMA AND CONFIDENCE LABELS
+«BODY»The extraction schema is shown in Listing 4.3 of Chapter 4 and the confidence labels are listed in Table 3.5. All extractors must return this schema, and the validation module checks it before the graph is built. A node record may carry additional optional attributes, such as a callable marker used by the call-graph resolver, but the four core fields are mandatory. A broken-reference record has the structure shown in Table 3.3 of Chapter 3 and always contains the status, the reason, the missing-node snapshots, the affected files and the original edge attributes.
+«H2»APPENDIX 3 - REPRODUCTION COMMANDS
+«BODY»The commands below reproduce the measurements of Chapter 5. They need no API key and no network access.
+«CODE»# 1. Install and prepare the environment
+«CODE»python3 -m venv .venv && . .venv/bin/activate
+«CODE»pip install -e '.[mcp]' pytest pytest-cov
+«CODE»
+«CODE»# 2. Full test suite and coverage
+«CODE»pytest tests/ -q
+«CODE»pytest tests/ -q --cov=code2graph --cov-report=term
+«CODE»
+«CODE»# 3. Build the graph of this repository (no LLM calls)
+«CODE»code2graph extract . --code-only --no-cluster
+«CODE»code2graph cluster-only . --no-label --no-viz
+«CODE»
+«CODE»# 4. Inspect the graph
+«CODE»code2graph god-nodes --top 20
+«CODE»code2graph query "how does the watcher heal broken references?" --budget 900
+«CODE»code2graph path "watch.py" "healing.py"
+«CODE»code2graph affected "_rebuild_code()" --depth 2
+«CODE»
+«CODE»# 5. Quality gates
+«CODE»python -m tools.skillgen --check
+«CODE»ruff check --config pyproject.toml code2graph
+«H2»APPENDIX 4 - KNOWN ISSUES OF THE REPOSITORY
+«BODY»The verification performed for this report also found issues in the repository that are unrelated to the design claims but relevant to anyone who installs it. They are recorded here so that the next contributor does not rediscover them.
+«BULLET»The package metadata declares LICENSE, LICENSE-MIT and NOTICE files that are not present in the repository, so a wheel build succeeds but ships no license text.
+«BULLET»The Markdown extractor imports PyYAML when it is available and silently falls back to a flat parser otherwise; PyYAML is not a declared runtime dependency, so nested frontmatter keys are lost in a minimal installation.
+«BULLET»The Terraform tests require tree-sitter-hcl, which is listed in the development group and in an optional extra but not in the base install; without it, thirty-two tests fail with an assertion on an empty extraction rather than a dependency message.
+«BULLET»The continuous-integration workflow runs the suite and the generated-artefact check but treats the static security scan and the dependency audit as non-blocking, and it does not run a coverage floor.
+«BULLET»The command-line dispatcher is a single function of about 3,900 lines and is covered at 56 per cent, which is the main obstacle to further testing of the interface layer.
+«PAGEBREAK»
+«H1»REFERENCES
+«REF»1. Allamanis, M., Barr, E.T., Devanbu, P. and Sutton, C. (2018a) 'A Survey of Machine Learning for Big Code and Naturalness', ACM Computing Surveys, Vol. 51, No. 4, Article 81.
+«REF»2. Allamanis, M., Brockschmidt, M. and Khademi, M. (2018b) 'Learning to Represent Programs with Graphs', Proceedings of the International Conference on Learning Representations (ICLR).
+«REF»3. Anthropic (2024) 'Model Context Protocol Specification', available at https://modelcontextprotocol.io (accessed November 2026).
+«REF»4. Blondel, V.D., Guillaume, J.-L., Lambiotte, R. and Lefebvre, E. (2008) 'Fast Unfolding of Communities in Large Networks', Journal of Statistical Mechanics: Theory and Experiment, P10008.
+«REF»5. Brunsfeld, M. et al. (n.d.) 'Tree-sitter: An Incremental Parsing System for Programming Tools', available at https://tree-sitter.github.io (accessed November 2026).
+«REF»6. Chen, J., Xiao, S., Zhang, P., Luo, K., Lian, D. and Liu, Z. (2024) 'BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation', arXiv:2402.03216.
+«REF»7. Cohen, J. (1960) 'A Coefficient of Agreement for Nominal Scales', Educational and Psychological Measurement, Vol. 20, No. 1, pp. 37-46.
+«REF»8. Cormack, G.V., Clarke, C.L.A. and Buettcher, S. (2009) 'Reciprocal Rank Fusion Outperforms Condorcet and Individual Rank Learning Methods', Proceedings of the ACM SIGIR Conference, pp. 758-759.
+«REF»9. Hagberg, A.A., Schult, D.A. and Swart, P.J. (2008) 'Exploring Network Structure, Dynamics, and Function using NetworkX', Proceedings of the 7th Python in Science Conference (SciPy 2008), pp. 11-15.
+«REF»10. Jimenez, C.E., Yang, J., Wettig, A., Yao, S., Pei, K., Press, O. and Narasimhan, K. (2024) 'SWE-bench: Can Language Models Resolve Real-World GitHub Issues?', Proceedings of the International Conference on Learning Representations (ICLR).
+«REF»11. Lewis, P. et al. (2020) 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', Advances in Neural Information Processing Systems, Vol. 33, pp. 9459-9474.
+«REF»12. Maharana, A. et al. (2024) 'Evaluating Very Long-Term Conversational Memory of LLM Agents', Proceedings of the Annual Meeting of the Association for Computational Linguistics (ACL).
+«REF»13. Microsoft (n.d.) 'Language Server Protocol Specification', available at https://microsoft.github.io/language-server-protocol/ (accessed November 2026).
+«REF»14. Packer, C. et al. (2023) 'MemGPT: Towards LLMs as Operating Systems', arXiv:2310.08560.
+«REF»15. Robertson, S. and Zaragoza, H. (2009) 'The Probabilistic Relevance Framework: BM25 and Beyond', Foundations and Trends in Information Retrieval, Vol. 3, No. 4, pp. 333-389.
+«REF»16. Shaya-Ak-7 (2026) 'Code2Graph: README, ARCHITECTURE, BENCHMARKS and SECURITY documents', GitHub repository, available at https://github.com/Shaya-Ak-7/Code2graph (accessed November 2026).
+«REF»17. Traag, V.A., Waltman, L. and van Eck, N.J. (2019) 'From Louvain to Leiden: Guaranteeing Well-Connected Communities', Scientific Reports, Vol. 9, Article 5233.
+«REF»18. United Nations (2015) 'Transforming Our World: The 2030 Agenda for Sustainable Development', General Assembly Resolution A/RES/70/1.
+«REF»19. Wu, D. et al. (2025) 'LongMemEval: Benchmarking Chat Assistants on Long-Term Interactive Memory', Proceedings of the International Conference on Learning Representations (ICLR).
+«REF»20. Yamaguchi, F., Golde, N., Arp, D. and Rieck, K. (2014) 'Modeling and Discovering Vulnerabilities with Code Property Graphs', Proceedings of the IEEE Symposium on Security and Privacy, pp. 590-604.
+«REF»21. Zhang, F. et al. (2023) 'RepoCoder: Repository-Level Code Completion Through Iterative Retrieval and Generation', Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP).

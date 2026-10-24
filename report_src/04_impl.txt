@@ -1,0 +1,212 @@
+«PAGEBREAK»
+«H1»CHAPTER 4
+«H1»IMPLEMENTATION
+«H2»4.1 DEVELOPMENT ENVIRONMENT AND PROJECT LAYOUT
+«BODY»Code2Graph is implemented in Python and distributed as an installable package described by pyproject.toml. Dependencies are locked with uv.lock, so that the same versions are installed on every machine. The repository root contains the package directory, the tests, the documentation, helper scripts and the configuration that supports development. Table 4.1 summarises the layout as it exists in the repository analysed for this report.
+«CAP»Table 4.1 Repository layout
+«TBL»4.1
+«BODY»Figure 4.1 presents the same structure as five layers, which is the mental model used throughout the implementation: a request enters at the interface layer, is answered by the intelligence and graph layers, and is ultimately produced by the extraction and foundation layers. The numbers in the figure are those measured on this repository: 55 top-level modules, 36 extractor modules, 112 recognised file extensions and a package of 52,935 lines of Python.
+«FIG»fig4_1_layers.png|Figure 4.1 Layer view of the implementation
+«H2»4.2 INSTALLATION AND EXECUTION
+«BODY»Python 3.10 or newer is required. The package is installed in editable mode from the repository root with the mcp extra, which adds the dependencies of the MCP server. The initial graph is created once with the extract command, and the MCP server is then started on the generated graph. The watcher starts together with the server.
+«CODE»# From the repository root
+«CODE»python -m pip install -e '.[mcp]'
+«CODE»# Create the initial local code graph once
+«CODE»code2graph extract . --code-only
+«CODE»# Start the MCP server; the project watcher starts with it
+«CODE»code2graph-mcp code2graph-out/graph.json
+«CODE»# One-off CLI help listing
+«CODE»code2graph --help
+«BODY»The graph and the incremental extraction cache are stored under code2graph-out by default. Two environment variables control the runtime. CODE2GRAPH_OUT selects another output directory, and CODE2GRAPH_WATCH_DEBOUNCE adjusts the save-event debounce interval, which defaults to 0.75 seconds. The option --code-only restricts extraction to locally parseable code, so no external semantic extraction is needed and no API key is required.
+«CODE»# Optional: use another output directory and a 1.5 s debounce (Linux / macOS)
+«CODE»export CODE2GRAPH_OUT=build/graph-out
+«CODE»export CODE2GRAPH_WATCH_DEBOUNCE=1.5
+«CODE»code2graph-mcp build/graph-out/graph.json
+«H2»4.3 IMPLEMENTATION OF THE PIPELINE STAGES
+«H3»4.3.1 DETECTION
+«BODY»The detect function receives the root directory and returns a scan summary dictionary. The summary contains the files grouped by category, the total number of files, the total word count, a warning field and the scan root. The set of suffixes treated as code is held in the constant CODE_EXTENSIONS in detect.py, which currently lists 112 extensions, and the watcher keeps a corresponding list of watched suffixes in _WATCHED_EXTENSIONS in watch.py. A new language must be added to both lists, which is one of the steps in Section 4.4.
+«H3»4.3.2 EXTRACTION
+«BODY»The extract function takes a list of paths. The root argument is keyword-only and optional, but the documentation insists that it should always be supplied, because node identifiers and source_file values are derived relative to root. If root is omitted, the function infers one from the common parent of the given paths, which for a single file is the directory of that file, and identifiers can then contain path segments from the machine on which the extraction ran. The signature below is taken from code2graph/extract.py.
+«CODE»def extract(
+«CODE»    paths: list[Path],
+«CODE»    cache_root: Path | None = None,
+«CODE»    *,
+«CODE»    root: Path | None = None,
+«CODE»    parallel: bool = True,
+«CODE»    max_workers: int | None = None,
+«CODE»    resolution_context_nodes: list[dict] | None = None,
+«CODE»    resolution_context_edges: list[dict] | None = None,
+«CODE») -> dict:
+«BODY»Internally, each extractor follows the same pattern: parse the file with tree-sitter, walk the syntax tree, collect nodes and edges, and run a call-graph second pass that adds INFERRED call edges. New languages are placed in their own module under code2graph/extractors, and extract.py re-exports them while the existing extractors are ported out of it. The resolver prefers to create no edge rather than a wrong edge when a target cannot be resolved with confidence, which keeps the cross-file INFERRED edges reliable. The extraction result of a single file has the form shown below.
+«CODE»{
+«CODE»  "nodes": [
+«CODE»    {"id": "unique_string", "label": "human name",
+«CODE»     "source_file": "path", "source_location": "L42"}
+«CODE»  ],
+«CODE»  "edges": [
+«CODE»    {"source": "id_a", "target": "id_b",
+«CODE»     "relation": "calls|imports|uses|...",
+«CODE»     "confidence": "EXTRACTED|INFERRED|AMBIGUOUS"}
+«CODE»  ]
+«CODE»}
+«BODY»The resolution_context_nodes and resolution_context_edges parameters are the mechanism that makes incremental extraction correct. When the watcher re-parses a changed file, it passes the AST of every unchanged file as read-only context, so a changed caller can still bind foo(), obj.method() or submit(handler) to an unchanged callee. These context structures are never parsed, mutated or returned; only edges sourced by the re-extracted files are emitted.
+«H3»4.3.3 GRAPH CONSTRUCTION
+«BODY»The build function accepts one extraction dictionary or a list of them and returns a NetworkX graph. The function build_from_json performs the same operation for a loaded JSON document. Because the extraction schema is validated first, the builder can assume that every edge has a source, a target, a relation and a confidence label. The builder also carries three safety features: deduplication of nodes and edges that were emitted twice, minting of external stub nodes for imports of packages outside the scan, and a shrink guard that refuses to overwrite a graph with one that has lost a large share of its nodes unless the caller explicitly forces the write. When graph.json is saved and reloaded, the direction of each edge must be preserved, as explained in Section 3.4.3.
+«H3»4.3.4 CLUSTERING AND ANALYSIS
+«BODY»The cluster function returns a dictionary from a community identifier to a list of node identifiers and leaves the input graph unchanged. The analyse functions use these communities together with the graph. The function suggest_questions interleaves its candidate questions across question types before the result limit, which is seven by default, is applied; the candidate order within each type is preserved, and when the limit is smaller than the number of types, the generation order decides priority. This avoids a situation where many ambiguous relationships push out the other, more informative, kinds of question.
+«H3»4.3.5 REPORTING AND EXPORT
+«BODY»The report generator assembles GRAPH_REPORT.md from the graph, the analysis results and the community labels. The export functions each produce one format. The wiki generator writes one article per community and an index file, and the call-flow generator reads files in the output directory and writes an HTML page with Mermaid diagrams. These outputs are intended both for people, who read the report and the wiki, and for tools, which read the JSON and Cypher exports.
+«H2»4.4 ADDING A NEW LANGUAGE EXTRACTOR
+«BODY»The architecture document prescribes the following procedure for supporting a new language. Following it makes the change visible to every part of the pipeline, including the watcher.
+«BULLET»Add a function extract_lang(path) that follows the existing pattern: parse with tree-sitter, walk the nodes, collect nodes and edges, and run the call-graph second pass for INFERRED call edges. Place it in its own module under code2graph/extractors.
+«BULLET»Register the file suffix in the dispatch table of extract() and in collect_files(), both in extract.py.
+«BULLET»Add the suffix to CODE_EXTENSIONS in detect.py and to _WATCHED_EXTENSIONS in watch.py.
+«BULLET»Add the tree-sitter package for the language to the dependencies in pyproject.toml, preferably as an optional extra so that the base installation stays small.
+«BULLET»Add a fixture file to tests/fixtures and behavioural tests to the language test module.
+«BODY»The repository's extractor migration guide adds one important engineering rule for work in progress: moved code must be byte-identical, one language per change, and the facade re-export in extract.py must keep every moved name. The guide exists because nineteen extractors have already been moved out of extract.py into separate modules without changing behaviour, which is what allows each move to be reviewed as a pure code movement.
+«H2»4.5 IMPLEMENTATION OF THE MCP SERVER
+«BODY»The serve module supports two transports: a standard-input/output server, which is used when a coding assistant launches the server as a child process, and an HTTP server, which accepts a host and a port. The server loads graph.json once, caches the graph in memory, and answers tool calls from the cache. A reload is triggered only when the persisted graph changes. The path of the graph file is validated so that it must resolve inside the output directory. The HTTP transport binds to 127.0.0.1 by default, optionally requires an API key, and prints a warning if it is bound to 0.0.0.0 without a key. Two example tool calls from the documentation are shown below.
+«CODE»{"tool": "broken_references", "arguments": {}}
+«CODE»{"tool": "heal_status", "arguments": {"file_path": "src/auth/session.py"}}
+«BODY»The first call lists all broken edges with their source, the missing endpoint and the reason. The second call reports the number of broken and healed references and the current healing state for one file. The remaining tools, query_graph, shortest_path, get_node, get_neighbors, get_community, god_nodes and graph_stats, let an agent search the graph, find paths and inspect a node, its neighbours and its community. The server also publishes six resources, which an MCP client can read directly: the report, the graph statistics, the god nodes, the surprising connections, the confidence audit and the suggested questions.
+«H2»4.6 ALGORITHMS
+«BODY»The following algorithms describe the behaviour of the system at design level. They are written as pseudocode, derived from the documented behaviour of the pipeline and the watcher, and they are not copies of the source code.
+«H3»4.6.1 BATCH GRAPH CONSTRUCTION
+«CODE»Algorithm 4.1  BuildGraph(root)
+«CODE»  summary     <- detect(root)
+«CODE»  files       <- collect_files(root)
+«CODE»  cached,todo <- check_cache(files, root)
+«CODE»  extractions <- cached
+«CODE»  for each file f in todo:
+«CODE»      result <- extract([f], root = root)
+«CODE»      assert_valid(result)                # schema check
+«CODE»      add result to extractions
+«CODE»  G           <- build(extractions)        # dedupe + stub minting + shrink guard
+«CODE»  communities <- cluster(G)
+«CODE»  analysis    <- god_nodes(G), surprising_connections(G),
+«CODE»                 find_import_cycles(G), suggest_questions(G, ...)
+«CODE»  report      <- generate(G, communities, ...)
+«CODE»  to_json(G) and the other requested exports
+«CODE»  return G
+«H3»4.6.2 INCREMENTAL UPDATE WITH HEALING
+«CODE»Algorithm 4.2  OnFilesChanged(events)
+«CODE»  wait until no new event arrives for `debounce` seconds
+«CODE»  changed  <- files from created, saved, deleted, renamed events
+«CODE»  old      <- nodes of G that belong to the changed files
+«CODE»  context  <- AST payload of every unchanged file      # read-only
+«CODE»  for each file f in changed that still exists:
+«CODE»      new_part <- extract([f], root, resolution_context = context)
+«CODE»      replace the nodes and edges of f in G by new_part
+«CODE»  new      <- nodes of G that belong to the changed files
+«CODE»  gone     <- old - new
+«CODE»  for each edge e in G whose endpoint is in gone:
+«CODE»      remove e from the active edge list
+«CODE»      record e as BROKEN with (missing node, location, reason, files)
+«CODE»  for each BROKEN record b:
+«CODE»      if every missing node of b exists again in G:
+«CODE»          restore the original edge and mark b HEALED
+«CODE»      else if exactly one node in the same file and at the same
+«CODE»              location replaced it (rename):
+«CODE»          re-point the edge, restore it and mark b HEALED
+«CODE»  persist G to graph.json atomically, then notify the MCP server
+«BODY»Two properties of this algorithm deserve emphasis. First, only changed files are parsed again and unchanged nodes stay in the cached graph, so the cost of an update depends on the size of the change and not on the size of the repository. Second, healing is conservative: an edge is re-pointed only when a unique same-file, same-location match exists, because a missing edge is less harmful than a wrong one. Algorithm 4.2 is the core contribution of the mini project and it is the behaviour exercised in the experiment of Section 5.4.
+«H3»4.6.3 GRAPH QUERY
+«CODE»Algorithm 4.3  QueryGraph(question, k, budget)
+«CODE»  terms  <- tokenise(question) minus stop words
+«CODE»  seeds  <- top-k nodes ranked by term overlap over label, id,
+«CODE»            source_file and rationale text
+«CODE»  context<- seeds
+«CODE»  for each node s in seeds:
+«CODE»      add the neighbours of s and their relations to context
+«CODE»  order the result by proximity to the seeds, then by score
+«CODE»  emit nodes and edges until `budget` tokens are consumed
+«BODY»The implementation additionally supports a depth-first mode for tracing a single path, an explicit context filter that restricts traversal to one class of edge (for example calls), and a token budget that truncates the answer while stating how many nodes were cut. The truncation message matters in practice: an agent that is told "26 of 268 nodes shown" can raise the budget or narrow the query instead of assuming the answer is complete.
+«H2»4.7 SECURITY IMPLEMENTATION
+«BODY»All external input is routed through the security module before use. Table 4.2 lists the checks. The tool is local, so the main risks are unsafe network input and writes outside the output directory.
+«CAP»Table 4.2 Security checks
+«TBL»4.2
+«BODY»The URL check is representative of the implementation style: it rejects any scheme other than http and https, rejects known cloud metadata hostnames, resolves the hostname and rejects private, loopback, link-local and reserved addresses, and the fetch layer re-validates every redirect and enforces a byte cap and a timeout. The excerpt below is taken from code2graph/security.py.
+«CODE»def validate_url(url: str) -> str:
+«CODE»    parsed = urllib.parse.urlparse(url)
+«CODE»    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+«CODE»        raise ValueError(...)              # only http and https
+«CODE»    hostname = parsed.hostname
+«CODE»    if hostname:
+«CODE»        if hostname.lower() in _BLOCKED_HOSTS:
+«CODE»            raise ValueError(...)          # cloud metadata endpoint
+«CODE»        infos = socket.getaddrinfo(hostname, None, ...)
+«CODE»        for info in infos:
+«CODE»            ip = ipaddress.ip_address(info[4][0])
+«CODE»            if _ip_is_blocked(ip):
+«CODE»                raise ValueError(...)      # private / internal IP
+«H2»4.8 TESTING STRATEGY
+«BODY»The repository follows the rule of one test file per module under tests. The suite is designed to avoid network access and uncontrolled file-system effects, and most tests are isolated with temporary directories and environment fixtures. The areas covered include extraction for every supported language, incremental rebuilds, MCP tools, broken-reference persistence, file deletion, symbol-rename healing and graph-cache reload behaviour. A special test, tests/test_architecture_doc.py, imports every symbol that is named in the architecture document, so the module table cannot drift away from the code. Two further guards protect generated artefacts: a generator check that fails if the committed agent-skill bundles differ from their source fragments, and a persistent-cache test that asserts an incremental rebuild produces the same graph as a cold build.
+«CODE»# Run the complete suite (the repository's documented command)
+«CODE»python -m pip install -e '.[mcp]' pytest
+«CODE»pytest tests/ -q
+«BODY»For this mini project the suite was run in a clean virtual environment on a two-core machine. It reports 6,542 passing tests, 174 skipped tests and no failures in 119 seconds, with 80 per cent statement coverage over 40,724 statements. The measured result is reported in Section 5.5 together with the exact command.
+«H2»4.9 PACKAGING, CONTAINERS AND AUTOMATION
+«BODY»The project is packaged with pyproject.toml and uv.lock records the exact dependency versions. A Dockerfile and a .dockerignore file allow the tool to run in a container as a non-root user, and the Dockerfile documents the HTTP transport invocation. A pre-commit configuration runs the generated-artefact check and a linter before each commit, and the .github directory holds the continuous-integration workflow, which runs the suite on four Python versions and performs a static security scan and a dependency audit. The repository also ships a build-time generator for the agent instruction bundles: 134 generated artefacts are checked against their source fragments, so a hand edit to a generated file fails the check instead of silently diverging.
+«H2»4.10 SOURCE CODE LISTINGS
+«BODY»The three listings below are excerpts of the two functions that carry the central behaviour of the mini project. Comments are preserved where they explain a decision, and the excerpts are shortened only by removing unchanged code, never by changing logic.
+«BODY»Listing 4.1 Healing reconciliation (excerpt of code2graph/healing.py, line 259).
+«CODE»def reconcile_healing(
+«CODE»    old_graph: dict,
+«CODE»    new_graph: dict,
+«CODE»    *,
+«CODE»    changed_paths: list[str | Path] | None = None,
+«CODE»    project_root: str | Path | None = None,
+«CODE») -> dict:
+«CODE»    """Carry broken references forward, detect deleted nodes,
+«CODE»    and auto-heal matches.
+«CODE»
+«CODE»    new_graph is mutated in place. Its regular edge list contains
+«CODE»    only valid endpoints; any unresolved edge is retained in graph
+«CODE»    metadata with a reason. When all missing nodes reappear (or a
+«CODE»    unique same-file rename match is found), the original edge is
+«CODE»    restored to the active edge list and its record transitions
+«CODE»    to HEALED.
+«CODE»    """
+«CODE»    records = _merge_records(old_meta.get(_BROKEN_KEY, []), ...)
+«CODE»    by_id = {record["id"]: record for record in records}
+«CODE»    removed_ids = set(old_nodes) - set(new_nodes)
+«CODE»    for edge in old_edges:
+«CODE»        src = edge.get("source", edge.get("from"))
+«CODE»        tgt = edge.get("target", edge.get("to"))
+«CODE»        missing = [n for n in (src, tgt) if n in removed_ids]
+«CODE»        if not missing:
+«CODE»            continue
+«CODE»        snapshots = {n: old_nodes.get(n) for n in missing}
+«CODE»        record = make_broken_reference(...)
+«BODY»Listing 4.2 Incremental rebuild entry point (excerpt of code2graph/watch.py, line 1561).
+«CODE»def _rebuild_code(
+«CODE»    watch_path: Path,
+«CODE»    *,
+«CODE»    changed_paths: list[Path] | None = None,
+«CODE»    follow_symlinks: bool = False,
+«CODE»    force: bool = False,
+«CODE»    no_cluster: bool = False,
+«CODE»    acquire_lock: bool = True,
+«CODE»    block_on_lock: bool = False,
+«CODE») -> bool:
+«CODE»    """Re-run AST extraction + build + optional cluster + report
+«CODE»    for code files. No LLM needed.
+«CODE»
+«CODE»    When changed_paths is provided, only those files are
+«CODE»    re-extracted; nodes for unchanged files are preserved from the
+«CODE»    existing graph. Deleted paths are dropped from the preserved
+«CODE»    set. When changed_paths is None the full code corpus is
+«CODE»    re-extracted.
+«CODE»    """
+«BODY»Listing 4.3 Node snapshot used inside a broken-reference record (excerpt of code2graph/healing.py, line 77).
+«CODE»def _node_snapshot(node_id: Any, node: dict | None) -> dict:
+«CODE»    """Minimal, stable copy of a node kept inside a BROKEN record."""
+«CODE»    node = node or {}
+«CODE»    return {
+«CODE»        "id": node_id,
+«CODE»        "label": node.get("label"),
+«CODE»        "source_file": node.get("source_file"),
+«CODE»        "source_location": node.get("source_location"),
+«CODE»        "file_type": node.get("file_type"),
+«CODE»        ...
+«CODE»    }

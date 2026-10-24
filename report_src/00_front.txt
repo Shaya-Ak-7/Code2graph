@@ -1,0 +1,47 @@
+«COVER_TITLE_CODE2GRAPH: A CODE-INTELLIGENCE GRAPH WITH REAL-TIME REFERENCE HEALING FOR AI CODING AGENTS
+«C»A MINI PROJECT REPORT
+«C»Submitted by
+«BOLD»AKSHAYA KUMAR R S (910623108002)
+«BOLD»SENTHIL PANDIAN G S (910623108044)
+«BOLD»SACHIN J (910623108041)
+«C»in partial fulfillment for the award of the degree
+«C»of
+«C»BACHELOR OF TECHNOLOGY
+«C»in
+«C»ARTIFICIAL INTELLIGENCE & DATA SCIENCE
+«LOGO»
+«C»K.L.N. COLLEGE OF ENGINEERING, POTTAPALAYAM
+«C»(An Autonomous Institution, Affiliated to Anna University, Chennai)
+«C»NOVEMBER 2026
+«PAGEBREAK»
+«C»K.L.N. COLLEGE OF ENGINEERING, POTTAPALAYAM
+«C»(An Autonomous Institution, Affiliated to Anna University, Chennai)
+«H1»BONAFIDE CERTIFICATE
+«BODY»Certified that this mini project report “CODE2GRAPH: A CODE-INTELLIGENCE GRAPH WITH REAL-TIME REFERENCE HEALING FOR AI CODING AGENTS” is the bonafide work of “AKSHAYA KUMAR R S (910623108002)”, “SENTHIL PANDIAN G S (910623108044)” and “SACHIN J (910623108041)” who carried out the mini project work under my supervision.
+«SIGBLOCK»
+Submitted for the mini project work viva-voce examination held on ____________________
+«SIGBLOCK2»
+«PAGEBREAK»
+«H1»ACKNOWLEDGEMENT
+«BODY»Any work would be unfulfilled without a word of thanks. We hereby take pleasure in acknowledging the persons who guided us throughout our mini project work.
+«BODY»First and foremost, thanks are to the omnipotent for providing us with his abundant blessings all throughout. We extend our heartfelt thanks to Er. K.N.K. KARTHIK, B.E., President of our college, and Dr. A.V. RAMPRASAD, M.E., Ph.D., Principal, for providing us with all the required facilities to carry out this mini project.
+«BODY»We esteem ourselves to articulate our sincere thanks to DR. S. SURESH RAJA, M.C.A., M.Phil., M.E., Ph.D., Head of the Department of Artificial Intelligence and Data Science, for leading us towards the zenith of success and for the constant encouragement given to us during the mini project.
+«BODY»We express our grateful thanks to our Mini Project Guide and Coordinator MR. B. ANANDA SABARI RAJAN, B.E., M.E., (Ph.D.), Assistant Professor, Department of Artificial Intelligence and Data Science, for the invaluable guidance, timely advice and constant motivation. His assistance has been very helpful throughout our mini project work. We would also like to thank all the teaching and non-teaching staff of our department, who have been a source of encouragement and ideas, and who lent us their support whenever it was needed.
+«BODY»Finally, we thank our families and friends for their patience and support during the course of this mini project.
+«PAGEBREAK»
+«H1»ABSTRACT
+«BODY»Understanding a large code base is a time-consuming task for developers and for AI coding agents, which can read only a limited amount of text at a time. This mini project presents Code2Graph, a code-intelligence toolkit that converts a source tree into a navigable graph of symbols, files, imports, calls and inheritance relationships. Structural extraction is fully deterministic and is implemented with tree-sitter grammars, so building the code graph needs no large-language-model credits and no API key. The graph is validated, clustered into communities, analysed and exported as a Markdown report, an interactive HTML page, a per-community wiki and several standard graph formats. A Model Context Protocol server exposes query, path, neighbour, community and broken-reference tools to coding agents. A background watcher debounces file events, re-parses only the changed files, records references whose targets disappeared as BROKEN metadata, and restores them when the targets return, so no manual update step is needed.
+«BODY»The implementation is evaluated in three ways. First, the toolkit is applied to its own repository: 566 code files are converted into 15,217 nodes and 35,451 edges in 23 seconds with zero model calls, and clustering produces 615 communities in 9 seconds. Second, the healing mechanism is exercised on a controlled two-file project, where deleting a file turns five edges into BROKEN records and restoring it heals all five and returns the file status to HEALTHY. Third, the engineering quality of the mini project is measured by its test suite, which reports 6,542 passing tests with 80 per cent statement coverage. The published evaluation of the upstream project, which is quoted separately and clearly labelled, reports a LOCOMO retrieval recall@10 of 0.497 and a key-fact coverage improvement on ERPNext from 70.8 to 82.0 per cent. The mini project primarily supports SDG 9: Industry, Innovation and Infrastructure.
+«PAGEBREAK»
+«H1»TABLE OF CONTENTS
+«TOC»
+«PAGEBREAK»
+«H1»LIST OF TABLES
+«LOT»
+«PAGEBREAK»
+«H1»LIST OF FIGURES
+«LOF»
+«PAGEBREAK»
+«H1»LIST OF ABBREVIATIONS
+«ABBR»
+«PAGEBREAK»
