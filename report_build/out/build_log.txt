@@ -3,4 +3,4 @@ segments: 7 -> 88223 chars
 style requests: 242 in 5 batches
 images: 18  tables: 20
 toc entries: 55  lot: 20  lof: 17
-estimated pages: 79  front: {'cover': 1, 'bonafide': 1, 'ack': 1, 'abstract': 1, 'TOC': 2, 'LOT': 1, 'LOF': 1, 'ABBR': 1}
+estimated pages: 47  front: {'cover': 1, 'bonafide': 1, 'ack': 1, 'abstract': 1, 'TOC': 2, 'LOT': 1, 'LOF': 1, 'ABBR': 1}

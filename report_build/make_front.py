@@ -6,7 +6,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 OUT = Path("report_build/out")
 front = json.loads((OUT / "front.json").read_text())
 TEXT_W = 451.28
-SIZE = 12.0
+SIZE = 11.0
 FONT = "Times-Roman"
 
 def leader(label: str, page, width=TEXT_W - 4):

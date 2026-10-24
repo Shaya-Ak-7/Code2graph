@@ -342,7 +342,7 @@ def style_requests(blocks: list[dict]) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # rough pagination, used only for the contents lists
 # --------------------------------------------------------------------------- #
-LINE = 1.5 * 1.15
+LINE = 1.15  # single spacing, to match the reference report
 
 
 def pheight(kind: str, size: float, text: str, width: float, spacing: float) -> float:
@@ -377,23 +377,29 @@ def paginate(blocks: list[dict], images: dict[str, tuple[float, float]],
             y = 0.0
         y += h
 
-    # front matter: cover, bonafide, acknowledgement, abstract, toc, lot, lof, abbr
-    for name, n in front_pages.items():
-        if name == "TOC":
-            page += max(0, math.ceil(toc_lines / 34) - 1)
-        else:
-            page += n - 1
-    page += 1  # first chapter starts on its own page
+    # front matter: cover, bonafide, acknowledgement, abstract, toc, lot, lof, abbr.
+    # Those pages are accounted for here, so the front-matter blocks themselves are
+    # skipped in the flow; the first chapter then starts on the next page.
+    front_total = sum(front_pages.values())
+    first_chapter = next(
+        (i for i, b in enumerate(blocks)
+         if b["kind"] == "H1" and b["text"].upper().startswith("CHAPTER")),
+        len(blocks),
+    )
+    page = front_total
     y = 0.0
 
     for idx, b in enumerate(blocks):
+        if idx < first_chapter:
+            pages[idx] = 1
+            continue
         kind = b["kind"]
         if b.get("page_break"):
             page += 1
             y = 0.0
         pages[idx] = page
         if kind in {"H1", "H2", "H3"}:
-            h = pheight(kind, 14, b["text"], TEXT_W, LINE)
+            h = pheight(kind, 12, b["text"], TEXT_W, LINE)
             h += 12 if kind == "H1" else 10 if kind == "H2" else 8
             advance(h + 4)
         elif kind == "CAP":
@@ -405,11 +411,11 @@ def paginate(blocks: list[dict], images: dict[str, tuple[float, float]],
             advance(h + 10)
         elif kind == "TBL":
             rows, _cols = TABLES[b["text"]]
-            advance(rows * 22 + 8)
+            advance(rows * 18 + 8)
         elif kind == "MARK":
             advance(24)
         else:
-            advance(pheight(kind, 14, b["text"], TEXT_W, LINE) + 6)
+            advance(pheight(kind, 11, b["text"], TEXT_W, LINE))
     return {"pages": pages, "total": page}
 
 
@@ -467,9 +473,9 @@ def main() -> None:
     front = {"cover": 1, "bonafide": 1, "ack": 1, "abstract": 1, "TOC": 2, "LOT": 1, "LOF": 1, "ABBR": 1}
     for _ in range(6):
         res = paginate(blocks, images, front, len(toc))
-        toc_pages = max(1, math.ceil((len(toc) + 8) / 34))
-        lot_pages = max(1, math.ceil((len(lot) + 6) / 40))
-        lof_pages = max(1, math.ceil((len(lof) + 6) / 40))
+        toc_pages = max(1, math.ceil((len(toc) + 8) / 45))
+        lot_pages = max(1, math.ceil((len(lot) + 6) / 45))
+        lof_pages = max(1, math.ceil((len(lof) + 6) / 45))
         new = dict(front, TOC=toc_pages, LOT=lot_pages, LOF=lof_pages)
         if new == front:
             break
