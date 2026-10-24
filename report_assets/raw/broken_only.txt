@@ -1,0 +1,32 @@
+$ tool: broken_references  (MCP tool output)
+BROKEN references: 5
+
+  status   : BROKEN
+  edge     : app_core -> app_core_parse_config   [contains, EXTRACTED]
+  missing  : parse_config()  (app/core.py:L1)
+  reason   : Connected node(s) were removed or renamed during file re-parse: parse_config()
+  affected : app/core.py
+
+  status   : BROKEN
+  edge     : app_core -> app_core_load   [contains, EXTRACTED]
+  missing  : load()  (app/core.py:L4)
+  reason   : Connected node(s) were removed or renamed during file re-parse: load()
+  affected : app/core.py
+
+  status   : BROKEN
+  edge     : app_core_load -> app_core_parse_config   [calls, EXTRACTED]
+  missing  : load()  (app/core.py:L4)
+  reason   : Connected node(s) were removed or renamed during file re-parse: load(), parse_config()
+  affected : app/core.py
+
+  status   : BROKEN
+  edge     : app_service -> app_core_parse_config   [imports, EXTRACTED]
+  missing  : parse_config()  (app/core.py:L1)
+  reason   : Connected node(s) were removed or renamed during file re-parse: parse_config()
+  affected : app/core.py, app/service.py
+
+  status   : BROKEN
+  edge     : app_service_start -> app_core_parse_config   [calls, EXTRACTED]
+  missing  : parse_config()  (app/core.py:L1)
+  reason   : Connected node(s) were removed or renamed during file re-parse: parse_config()
+  affected : app/core.py, app/service.py

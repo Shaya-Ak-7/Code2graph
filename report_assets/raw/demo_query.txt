@@ -1,0 +1,24 @@
+$ code2graph query "how is a login session validated?" --budget 400
+Graph: code2graph-out/graph.json (23 nodes) | Traversal: BFS depth=2 | Start: ['login()', 'session.py'] | 22 nodes found
+
+[!] TRUNCATED: showing 18 of 22 nodes (~400-token budget). The answer may be among the 4 cut nodes — raise the token budget (CLI: --budget) or narrow the query (e.g. context_filter=['call'], or get_node for a specific symbol).
+
+NODE login() [src=app/auth.py loc=L5 community=2]
+NODE session.py [src=app/session.py loc=L1 community=0]
+NODE auth.py [src=app/auth.py loc=L1 community=3]
+NODE api.py [src=app/api.py loc=L1 community=1]
+NODE create_session() [src=app/session.py loc=L5 community=0]
+NODE db.py [src=app/db.py loc=L1 community=0]
+NODE db_connect() [src=app/db.py loc=L3 community=0]
+NODE validate_session() [src=app/session.py loc=L11 community=3]
+NODE test_auth.py [src=tests/test_auth.py loc=L1 community=2]
+NODE test_login_creates_session() [src=tests/test_auth.py loc=L4 community=2]
+NODE handle_login() [src=app/api.py loc=L5 community=2]
+NODE Validate credentials and open a session. [src=app/auth.py loc=L6 community=2]
+NODE Session storage backed by the demo database. [src=app/session.py loc=L1 community=0]
+NODE is_authenticated() [src=app/auth.py loc=L12 community=1]
+NODE handle_profile() [src=app/api.py loc=L10 community=1]
+NODE Tiny request layer used by the demo. [src=app/api.py loc=L1 community=1]
+NODE Authentication entry points. [src=app/auth.py loc=L1 community=3]
+NODE db_close() [src=app/db.py loc=L7 community=0]
+... (truncated — 4 more nodes cut by ~400-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

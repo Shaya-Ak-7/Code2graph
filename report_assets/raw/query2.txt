@@ -1,0 +1,25 @@
+Graph: code2graph-out/graph.json (15217 nodes) | Traversal: BFS depth=2 | Start: ['healing.py', 'Healing must survive a round-trip: after the first load rewrites the tag to…', 'References from `func_label` whose context is `type_bound`.', '_broken_uv_machine()'] | Context: call (explicit) | 10 nodes found
+
+[i] Complete answer over budget: all 10 nodes and 11 edges shown (~870 tokens vs the requested ~500-token budget). Edges are never dropped once every node fits, so this is already the full answer — raising --budget further will not shrink it. Narrow with context_filter=['call'] or use get_node for a specific symbol to reduce size instead.
+
+NODE healing.py [src=code2graph/healing.py loc=L1 community=Community 44]
+NODE Healing must survive a round-trip: after the first load rewrites the tag to… [src=tests/test_build.py loc=L232 community=Community 7]
+NODE References from `func_label` whose context is `type_bound`. [src=tests/test_scala_context_bounds.py loc=L56 community=Community 194]
+NODE _broken_uv_machine() [src=tests/test_hooks.py loc=L725 community=Community 129]
+NODE test_shebang_parse_requires_leading_hash_bang() [src=tests/test_hooks.py loc=L808 community=Community 129]
+NODE test_uv_tool_env_rescues_hook_when_pin_and_launcher_fail() [src=tests/test_hooks.py loc=L759 community=Community 129]
+NODE test_uv_tool_env_without_code2graph_still_fails_loudly() [src=tests/test_hooks.py loc=L795 community=Community 129]
+NODE test_uv_tool_env_honors_uv_tool_dir_and_windows_layout() [src=tests/test_hooks.py loc=L779 community=Community 129]
+NODE _detect_run() [src=tests/test_hooks.py loc=L700 community=Community 129]
+NODE _tool_venv() [src=tests/test_hooks.py loc=L745 community=Community 129]
+EDGE test_shebang_parse_requires_leading_hash_bang() --calls [EXTRACTED context=call]--> _broken_uv_machine() at=tests/test_hooks.py:L813
+EDGE test_uv_tool_env_honors_uv_tool_dir_and_windows_layout() --calls [EXTRACTED context=call]--> _broken_uv_machine() at=tests/test_hooks.py:L783
+EDGE test_uv_tool_env_rescues_hook_when_pin_and_launcher_fail() --calls [EXTRACTED context=call]--> _broken_uv_machine() at=tests/test_hooks.py:L767
+EDGE test_uv_tool_env_without_code2graph_still_fails_loudly() --calls [EXTRACTED context=call]--> _broken_uv_machine() at=tests/test_hooks.py:L799
+EDGE test_uv_tool_env_rescues_hook_when_pin_and_launcher_fail() --calls [EXTRACTED context=call]--> _detect_run() at=tests/test_hooks.py:L770
+EDGE test_uv_tool_env_rescues_hook_when_pin_and_launcher_fail() --calls [EXTRACTED context=call]--> _tool_venv() at=tests/test_hooks.py:L768
+EDGE test_uv_tool_env_honors_uv_tool_dir_and_windows_layout() --calls [EXTRACTED context=call]--> _detect_run() at=tests/test_hooks.py:L789
+EDGE test_shebang_parse_requires_leading_hash_bang() --calls [EXTRACTED context=call]--> _detect_run() at=tests/test_hooks.py:L824
+EDGE test_shebang_parse_requires_leading_hash_bang() --calls [EXTRACTED context=call]--> _tool_venv() at=tests/test_hooks.py:L814
+EDGE test_uv_tool_env_without_code2graph_still_fails_loudly() --calls [EXTRACTED context=call]--> _detect_run() at=tests/test_hooks.py:L801
+EDGE test_uv_tool_env_without_code2graph_still_fails_loudly() --calls [EXTRACTED context=call]--> _tool_venv() at=tests/test_hooks.py:L800

@@ -1,0 +1,26 @@
+Node: reconcile_healing()
+  ID:        code2graph_healing_reconcile_healing
+  Source:    code2graph/healing.py L259
+  Type:      code
+  Community: Community 44
+  Degree:    18
+
+Connections (18):
+  <-- _rebuild_code() [calls] [EXTRACTED] code2graph/watch.py:L2132
+  <-- watch.py [imports] [EXTRACTED] code2graph/watch.py:L2131
+  <-- healing.py [contains] [EXTRACTED] code2graph/healing.py:L259
+  <-- test_healing.py [imports] [EXTRACTED] tests/test_healing.py:L6
+  --> make_broken_reference() [calls] [EXTRACTED] code2graph/healing.py:L300
+  --> _normal_path() [calls] [EXTRACTED] code2graph/healing.py:L347
+  --> _json_value() [calls] [EXTRACTED] code2graph/healing.py:L383
+  --> _node_snapshot() [calls] [EXTRACTED] code2graph/healing.py:L341
+  --> _find_replacement() [calls] [EXTRACTED] code2graph/healing.py:L342
+  <-- test_deleted_node_marks_all_old_edges_broken_then_readdition_heals_them() [calls] [EXTRACTED] tests/test_healing.py:L86
+  --> _graph_metadata() [calls] [EXTRACTED] code2graph/healing.py:L277
+  --> _merge_records() [calls] [EXTRACTED] code2graph/healing.py:L287
+  --> Path [references] [EXTRACTED] code2graph/healing.py:L259
+  <-- test_unique_same_file_symbol_rename_auto_heals_inbound_edge() [calls] [EXTRACTED] tests/test_healing.py:L145
+  --> _nodes() [calls] [EXTRACTED] code2graph/healing.py:L278
+  --> _now() [calls] [EXTRACTED] code2graph/healing.py:L370
+  --> _edges() [calls] [EXTRACTED] code2graph/healing.py:L280
+  <-- Carry broken references forward, detect deleted nodes, and auto-heal matches.… [rationale_for] [EXTRACTED] code2graph/healing.py:L266

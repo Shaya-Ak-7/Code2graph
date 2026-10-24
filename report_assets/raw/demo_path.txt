@@ -1,0 +1,17 @@
+$ code2graph path "handle_login()" "db_connect()"
+Shortest path (3 hops):
+  handle_login() --calls [EXTRACTED]--> login() --calls [EXTRACTED]--> create_session() --calls [EXTRACTED]--> db_connect()
+
+$ code2graph explain "validate_session()"
+Node: validate_session()
+  ID:        app_session_validate_session
+  Source:    app/session.py L11
+  Type:      code
+  Community: 3
+  Degree:    4
+
+Connections (4):
+  <-- auth.py [imports] [EXTRACTED] app/auth.py:L2
+  <-- is_authenticated() [calls] [EXTRACTED] app/auth.py:L14
+  <-- session.py [contains] [EXTRACTED] app/session.py:L11
+  <-- Return True when the session has a user and an open connection. [rationale_for] [EXTRACTED] app/session.py:L12

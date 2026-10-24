@@ -1,0 +1,15 @@
+$ code2graph extract . --code-only
+[code2graph extract] scanning /tmp/c2gdemo
+[code2graph extract] found 5 code, 0 docs, 0 papers, 0 images
+[code2graph extract] AST extraction on 5 code files...
+[code2graph extract] wrote /tmp/c2gdemo/code2graph-out/graph.json: 23 nodes, 36 edges, 4 communities
+[code2graph extract] wrote /tmp/c2gdemo/code2graph-out/.code2graph_analysis.json
+[code2graph extract] next: run `code2graph cluster-only /tmp/c2gdemo` to generate GRAPH_REPORT.md and name communities
+
+$ code2graph god-nodes --top 5
+God nodes (most connected):
+  1. is_authenticated() - 7 edges
+  2. login() - 7 edges
+  3. create_session() - 5 edges
+  4. db_connect() - 4 edges
+  5. validate_session() - 4 edges

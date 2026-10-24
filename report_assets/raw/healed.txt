@@ -1,0 +1,18 @@
+$ tool: broken_references   (after restoring app/core.py)
+active BROKEN references : 0
+history HEALED references: 5
+
+  HEALED: app_core -> app_core_parse_config [contains]
+  HEALED: app_core -> app_core_load [contains]
+  HEALED: app_core_load -> app_core_parse_config [calls]
+
+$ tool: heal_status  {"file_path": "app/core.py"}
+{
+  "file": "app/core.py",
+  "status": "HEALTHY",
+  "broken_references": 0,
+  "healed_references": 5,
+  "updated_at": null,
+  "last_action": null,
+  "references": []
+}

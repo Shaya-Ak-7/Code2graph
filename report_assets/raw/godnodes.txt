@@ -1,0 +1,16 @@
+God nodes (most connected):
+  1. extract() - 851 edges
+  2. build_from_json() - 264 edges
+  3. _make_id() - 231 edges
+  4. _read_text() - 227 edges
+  5. _rebuild_code() - 218 edges
+  6. detect() - 145 edges
+  7. dispatch_command() - 133 edges
+  8. _file_stem() - 127 edges
+  9. deduplicate_entities() - 111 edges
+  10. main() - 103 edges
+  11. _labels() - 103 edges
+  12. build_merge() - 102 edges
+  13. _edge_labels() - 95 edges
+  14. extract_js() - 95 edges
+  15. ingest_scip_json() - 83 edges

@@ -1,0 +1,35 @@
+$ tool: heal_status  {"file_path": "app/core.py"}
+{
+  "file": "app/core.py",
+  "status": "BROKEN",
+  "broken_references": 5,
+  "healed_references": 0,
+  "updated_at": null,
+  "last_action": null,
+  "references": [
+    {
+      "id": "d5758f4fd7ac2254c7316fff",
+      "status": "BROKEN",
+      "reason": "Connected node(s) were removed or renamed during file re-parse: parse_config()",
+      "created_at": "2026-10-24T05:33:06+00:00",
+      "missing_nodes": [
+        {
+          "id": "app_core_parse_config",
+          "label": "parse_config()",
+          "source_file": "app/core.py",
+          "source_location": "L1",
+          "file_type": "code",
+          "kind": null,
+          "type": null,
+          "language": null
+        }
+      ],
+      "missing_node_ids": [
+        "app_core_parse_config"
+      ],
+      "affected_files": [
+        "app/core.py"
+      ],
+      "edge": {
+        "source": "app_core",
+        "target": "app_core_pars
